@@ -24,7 +24,7 @@ ADMIN_USERNAME = 'admin'
 ADMIN_PASSWORD = 'admin123'
 
 # SQLAlchemy + PyMySQL connection
-app.config['SQLALCHEMY_DATABASE_URI'] = 'mysql+pymysql://root:@localhost:3306/barma'
+app.config['SQLALCHEMY_DATABASE_URI'] = "postgresql://barma_user:ns8Bnjnx92gwyxRv5siNrzfZ40G2J8xa@dpg-d2n7iiffte5s7391slt0-a.oregon-postgres.render.com:5432/barma"
 
 app.config['SQLALCHEMY_ENGINE_OPTIONS'] = {
     'pool_pre_ping': True
