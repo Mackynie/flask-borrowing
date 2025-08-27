@@ -1,0 +1,341 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Manage Assets - BARMA</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css">
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+  <link rel="stylesheet" href="https://unpkg.com/aos@2.3.1/dist/aos.css" />
+  <style>
+    .input-group .form-control {
+      box-shadow: none !important;
+    }
+    .input-group-text {
+      background-color: #fff !important;
+      border-right: none !important;
+      border-top-right-radius: 0 !important;
+      border-bottom-right-radius: 0 !important;
+    }
+    .form-control.border-start-0 {
+      border-left: none !important;
+      border-top-left-radius: 0 !important;
+      border-bottom-left-radius: 0 !important;
+    }
+    .input-group .bi {
+      font-size: 1rem;
+      vertical-align: middle;
+    }
+    .input-group:focus-within {
+      border-color: #0d6efd;
+      box-shadow: 0 0 0 0.2rem rgba(13, 110, 253, 0.25);
+    }
+  </style>
+</head>
+<body>
+
+<div class="container-fluid">
+  <div class="row">
+    <!-- Sidebar -->
+    <nav class="col-md-2 d-md-block sidebar">
+      <ul class="nav flex-column">
+        <li class="nav-item text-center mt-3">
+          <a href="{{ url_for('dashboard') }}" class="text-decoration-none text-light">
+            <img src="{{ url_for('static', filename='img/logo3.png') }}" 
+                alt="BARMA Logo" 
+                style="max-width: 120px; margin-bottom: 1px;">
+            <h1 class="mt-2">BARMA</h1>
+          </a>
+        </li>
+        <li class="nav-item"><a class="nav-link" href="{{ url_for('dashboard') }}"><i class="bi bi-speedometer2 me-2"></i>Dashboard</a></li>
+        <li class="nav-item"><a class="nav-link active" href="{{ url_for('assets_page') }}"><i class="bi bi-box-seam me-2"></i>Assets</a></li>
+        <li class="nav-item"><a class="nav-link" href="{{ url_for('reservations_page') }}"><i class="bi bi-calendar-check me-2"></i>Reservations</a></li>
+        <li class="nav-item"><a class="nav-link" href="{{ url_for('borrowings_page') }}"><i class="bi bi-arrow-left-right me-2"></i>Borrowing</a></li>
+        <li class="nav-item"><a class="nav-link" href="{{ url_for('manage_accounts') }}"><i class="bi bi-people-fill me-2"></i>Accounts</a></li>
+        <li class="nav-item"><a class="nav-link" href="{{ url_for('history_page') }}"><i class="bi bi-clock-history me-2"></i>History</a></li>
+        <li class="nav-item logout-btn mt-3 text-center">
+          <a href="{{ url_for('logout') }}" class="btn btn-outline-light w-75">
+            <i class="bi bi-box-arrow-right me-2"></i>Logout
+          </a>
+        </li>
+      </ul>
+    </nav>
+
+    <!-- Main Content -->
+    <main class="col-md-10 ms-sm-auto px-4 mt-4">
+      <h1 class="fw-bold mb-4" data-aos="fade-down">Manage Assets</h1>
+
+      <!-- Search & Export -->
+      <div class="d-flex justify-content-between flex-wrap mb-3">
+        <div class="input-group" style="width: 250px;">
+          <span class="input-group-text bg-white border-end-0">
+            <i class="bi bi-search text-muted"></i>
+          </span>
+          <input type="text" id="searchInput" class="form-control border-start-0" placeholder="Search assets...">
+        </div>
+        <div class="btn-group">
+          <button class="btn btn-sm text-white" style="background-color: #0056b3;" onclick="exportFilteredToWord()">
+            <i class="bi bi-file-earmark-word me-1"></i> Export to Word
+          </button>
+          <button class="btn btn-sm text-white" style="background-color: #b30000;" onclick="exportFilteredToPDF()">
+            <i class="bi bi-filetype-pdf me-1"></i> Export to PDF
+          </button>
+          <button class="btn btn-sm text-dark" style="background-color: #FFC100;" onclick="printReport()">
+            <i class="bi bi-printer me-1"></i> Print
+          </button>
+        </div>
+      </div>
+
+      <!-- Add Asset Button -->
+      <div class="mb-3" data-aos="fade-right">
+        <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addAssetModal">
+          <i class="bi bi-plus-circle me-1"></i> Add Asset
+        </button>
+      </div>
+
+      <!-- Assets Table -->
+      <div class="table-responsive" data-aos="fade-up" id="exportSection">
+        <table class="table table-bordered table-hover" id="assetsTable">
+          <thead class="table-light">
+            <tr>
+              <th>ID</th>
+              <th>Name</th>
+              <th>Quantity</th>
+              <th>Classification</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for asset in assets %}
+            <tr class="export-visible">
+              <td>{{ asset.id }}</td>
+              <td>{{ asset.name }}</td>
+              <td>{{ asset.quantity }}</td>
+              <td>{{ asset.classification }}</td>
+              <td>
+                <button class="btn btn-warning btn-sm" data-bs-toggle="modal" data-bs-target="#editAssetModal{{ asset.id }}">
+                  <i class="bi bi-pencil"></i> Edit
+                </button>
+                <a href="{{ url_for('delete_asset', id=asset.id) }}" class="btn btn-danger btn-sm" onclick="return confirm('Are you sure?')">
+                  <i class="bi bi-trash"></i> Delete
+                </a>
+              </td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </main>
+  </div>
+</div>
+
+<!-- Add Modal -->
+<div class="modal fade" id="addAssetModal" tabindex="-1">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <form method="POST" action="{{ url_for('add_asset') }}">
+        <div class="modal-header">
+          <h5 class="modal-title">Add New Asset</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body">
+          <div class="mb-3">
+            <label class="form-label">Asset Name</label>
+            <input type="text" class="form-control" name="name" required>
+          </div>
+          <div class="mb-3">
+            <label class="form-label">Quantity</label>
+            <input type="number" class="form-control" name="quantity" min="1" required>
+          </div>
+          <div class="mb-3">
+            <label class="form-label">Classification</label>
+            <select class="form-select" name="classification" required>
+              <option value="" disabled selected>Select type</option>
+              <option value="Reservation">Reservation (Facilities)</option>
+              <option value="Borrowing">Borrowing (Equipment)</option>
+            </select>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="submit" class="btn btn-primary"><i class="bi bi-plus-circle me-1"></i> Add Asset</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<!-- Edit Modals -->
+{% for asset in assets %}
+<div class="modal fade" id="editAssetModal{{ asset.id }}" tabindex="-1">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <form method="POST" action="{{ url_for('update_asset', id=asset.id) }}">
+        <div class="modal-header">
+          <h5 class="modal-title">Edit Asset</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body">
+          <div class="mb-3">
+            <label class="form-label">Asset Name</label>
+            <input type="text" class="form-control" name="name" value="{{ asset.name }}" required>
+          </div>
+          <div class="mb-3">
+            <label class="form-label">Quantity</label>
+            <input type="number" class="form-control" name="quantity" value="{{ asset.quantity }}" min="1" required>
+          </div>
+          <div class="mb-3">
+            <label class="form-label">Classification</label>
+            <select class="form-select" name="classification" required>
+              <option value="Reservation" {% if asset.classification == 'Reservation' %}selected{% endif %}>Reservation (Facilities)</option>
+              <option value="Borrowing" {% if asset.classification == 'Borrowing' %}selected{% endif %}>Borrowing (Equipment)</option>
+            </select>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="submit" class="btn btn-primary"><i class="bi bi-save me-1"></i> Update Asset</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+{% endfor %}
+
+<!-- Scripts -->
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+<script src="https://unpkg.com/aos@2.3.1/dist/aos.js"></script>
+<script>
+AOS.init();
+
+function filterAssets() {
+  const searchTerm = document.getElementById('searchInput').value.toLowerCase();
+  document.querySelectorAll('#assetsTable tbody tr').forEach(row => {
+    const rowText = row.textContent.toLowerCase();
+    const visible = rowText.includes(searchTerm);
+    row.style.display = visible ? '' : 'none';
+    row.classList.toggle('export-visible', visible);
+  });
+}
+
+function getExportHeader() {
+  const search = document.getElementById('searchInput').value || 'All';
+  return `<h3 style="text-align:center;">BARMA - Assets Report</h3>
+          <p style="text-align:center; font-size:12px;">Search: ${search}</p>`;
+}
+
+function getFilteredFilename(base) {
+  const search = document.getElementById('searchInput').value || 'All';
+  return `${base}${search !== 'All' ? '-' + search : ''}`;
+}
+
+// Clone table and remove Actions column for exports
+function getExportTableClone() {
+  const tableClone = document.getElementById('assetsTable').cloneNode(true);
+  const tbody = tableClone.querySelector('tbody');
+
+  // Keep only visible rows
+  Array.from(tbody.rows).forEach(row => {
+    if (!row.classList.contains('export-visible')) tbody.removeChild(row);
+  });
+
+  // Remove last column (Actions)
+  tableClone.querySelectorAll('tr').forEach(row => {
+    row.removeChild(row.lastElementChild);
+  });
+
+  return tableClone;
+}
+
+// Export to Word
+function exportFilteredToWord() {
+  const rows = document.querySelectorAll('#assetsTable tbody tr.export-visible');
+  if (!rows.length) return alert('No visible records to export.');
+
+  const tableClone = getExportTableClone();
+
+  let html = `<html><head><meta charset="utf-8"><style>
+    body { font-family: 'Segoe UI'; font-size: 14px; }
+    table { width: 100%; border-collapse: collapse; }
+    th, td { border: 1px solid #000; padding: 6px; text-align: center; }
+    th { background-color: #f0f0f0; font-weight: bold; }
+  </style></head><body>${getExportHeader()}${tableClone.outerHTML}</body></html>`;
+
+  const blob = new Blob(['\ufeff' + html], { type: 'application/msword' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = getFilteredFilename('BARMA-Assets-Report.doc');
+  a.click();
+  URL.revokeObjectURL(url);
+}
+
+// Export to PDF
+function exportFilteredToPDF() {
+  const rows = document.querySelectorAll('#assetsTable tbody tr.export-visible');
+  if (!rows.length) return alert('No visible records to export.');
+
+  const tableClone = getExportTableClone();
+
+  // Black-and-white styling
+  tableClone.style.borderCollapse = 'collapse';
+  tableClone.querySelectorAll('th, td').forEach(cell => {
+    cell.style.border = '1px solid black';
+    cell.style.color = 'black';
+    cell.style.backgroundColor = '#fff';
+    cell.style.padding = '6px';
+    cell.style.textAlign = 'center';
+  });
+  tableClone.querySelectorAll('th').forEach(cell => {
+    cell.style.fontWeight = 'bold';
+  });
+
+  const container = document.createElement('div');
+  container.innerHTML = getExportHeader();
+  container.appendChild(tableClone);
+
+  html2pdf().from(container).set({
+    margin: 0.5,
+    filename: getFilteredFilename('BARMA-Assets-Report.pdf'),
+    image: { type: 'jpeg', quality: 1 },
+    html2canvas: { scale: 2 },
+    jsPDF: { unit: 'in', format: 'letter', orientation: 'portrait' }
+  }).save();
+}
+
+function printReport() {
+  const tableClone = getExportTableClone();
+
+  const container = document.createElement('div');
+  container.innerHTML = getExportHeader();
+  container.appendChild(tableClone);
+
+  // Include Bootstrap CSS for print styling
+  const printWindow = window.open('', '', 'width=800,height=600');
+  printWindow.document.write(`
+    <html>
+      <head>
+        <title>Print Assets Report</title>
+        <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+        <style>
+          table { border-collapse: collapse !important; }
+          th, td { border: 1px solid black !important; padding: 6px; text-align: center; }
+          th { font-weight: bold; background-color: #f0f0f0 !important; }
+        </style>
+      </head>
+      <body>
+        ${container.innerHTML}
+      </body>
+    </html>
+  `);
+  printWindow.document.close();
+  printWindow.focus();
+  printWindow.print();
+  printWindow.close();
+}
+
+
+document.getElementById('searchInput').addEventListener('input', filterAssets);
+filterAssets();
+</script>
+</body>
+</html>

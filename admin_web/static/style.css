@@ -1,0 +1,330 @@
+:root {
+  --red: #C40C0C;
+  --dark-red: #a10b0b;
+  --amber: #FFC100;
+  --orange: #FF6500;
+  --deep-orange: #FF8A08;
+  --beige: #ECDCBF;
+  --light-yellow: #F8F2DE;
+}
+
+/* General Page Styling */
+body {
+  font-family: 'Segoe UI', sans-serif;
+  background: linear-gradient(to bottom right, var(--light-yellow), var(--beige));
+  color: #333;
+  margin: 0;
+  padding: 0;
+  transition: background 0.3s ease;
+}
+
+/* Sidebar */
+.sidebar {
+  background-color: var(--red) !important;
+  color: white;
+  padding-top: 1rem;
+  min-height: 100vh;
+}
+
+.sidebar .nav-link {
+  color: white;
+  padding: 12px;
+  display: block;
+  font-size: 1.4rem;
+}
+
+.sidebar .nav-link.active {
+  font-weight: bold;
+  color: var(--amber);
+}
+
+/* Cards */
+.card {
+  background-color: var(--beige);
+  border-radius: 12px;
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.07);
+  transition: transform 0.3s ease;
+  padding: 15px;
+  margin: 10px 0;
+}
+
+.card:hover {
+  transform: translateY(-5px);
+}
+
+.card-assets {
+  background-color: var(--amber);
+  color: white;
+  border-left: 5px solid white;
+}
+
+.card-reservations {
+  background-color: var(--orange);
+  color: white;
+  border-left: 5px solid white;
+}
+
+.card-pending {
+  background-color: var(--deep-orange);
+  color: white;
+  border-left: 5px solid white;
+}
+
+/* Buttons */
+.btn {
+  border-radius: 8px;
+  font-weight: 500;
+  padding: 8px 16px;
+}
+
+.btn-primary {
+  background-color: var(--orange);
+  border: none;
+  color: white;
+}
+
+.btn-primary:hover {
+  background-color: var(--deep-orange);
+}
+
+.btn-danger {
+  background-color: var(--red);
+  border: none;
+}
+
+.btn-danger:hover {
+  background-color: var(--dark-red);
+}
+
+.btn-outline-danger {
+  color: var(--red);
+  border-color: var(--red);
+}
+
+.btn-outline-light {
+  border-color: white;
+  color: white;
+}
+
+.btn-outline-light:hover {
+  background-color: white;
+  color: var(--red);
+}
+.btn:hover {
+  transform: scale(1.05);
+  transition: transform 0.2s ease;
+}
+
+/* Search Bar Enhancements */
+.search-wrapper {
+  max-width: 500px;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.search-input {
+  border-radius: 0 2rem 2rem 0;
+  padding-left: 10px;
+  border: 1px solid var(--amber);
+}
+
+.input-group-text {
+  border-radius: 2rem 0 0 2rem;
+  border: 1px solid var(--amber);
+}
+#searchInput,
+#dateFilter {
+  border-radius: 10px;
+  padding: 10px;
+  border: 1px solid var(--amber);
+}
+
+
+/* Forms & Inputs */
+input.form-control {
+  border-radius: 8px;
+  padding: 10px 12px;
+  border: 1px solid #ccc;
+}
+
+/* Tables */
+.table thead {
+  background-color: var(--red);
+  color: white;
+}
+
+.table-striped tbody tr:nth-of-type(odd) {
+  background-color: var(--light-yellow);
+}
+
+.table tbody tr:hover {
+  background-color: var(--amber);
+  color: black;
+  transition: background 0.2s ease;
+}
+
+.table th,
+.table td {
+  border: 1px solid var(--deep-orange);
+  padding: 10px;
+}
+
+/* Modals */
+.modal-content {
+  background-color: var(--beige);
+  border-radius: 10px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.1);
+}
+
+/* List group (for notifications) */
+.list-group-item {
+  background-color: white;
+  border-color: var(--amber);
+}
+
+/* Section Titles */
+.section-title {
+  margin-top: 2rem;
+  margin-bottom: 1rem;
+  font-weight: bold;
+  font-size: 1.3rem;
+}
+
+/* Header Title Outside Container (Optional) */
+.header-title {
+  position: absolute;
+  top: 15px;
+  left: 50%;
+  transform: translateX(-50%);
+  font-size: 2.5rem;
+  font-weight: bold;
+  color: var(--red);
+  text-shadow: 1px 1px #fff;
+  z-index: 1000;
+}
+.nav-tabs .nav-link.active {
+  background-color: var(--amber);
+  color: white;
+  border-radius: 0.5rem 0.5rem 0 0;
+  font-weight: 600;
+}
+
+.nav-tabs .nav-link {
+  background-color: #f8f9fa;
+  color: var(--red);
+}
+.print-only {
+  display: none;
+}
+
+@media print {
+  body {
+    padding: 20px;
+    margin: 0;
+  }
+
+  .sidebar, .btn, .form-control, .input-group-text, select {
+    display: none !important;
+  }
+
+  .print-only {
+    display: block;
+  }
+
+  .card {
+    border: none !important;
+    box-shadow: none !important;
+  }
+
+  .export-only {
+    display: block;
+  }
+
+  #exportSection {
+    margin-top: 20px;
+  }
+}
+/* === FullCalendar Theming with BARMA Colors === */
+
+/* Calendar Layout */
+#calendar {
+  background-color: var(--light-yellow);
+  border-radius: 12px;
+  padding: 15px;
+  box-shadow: 0 8px 18px rgba(0, 0, 0, 0.05);
+}
+
+/* Toolbar Title */
+.fc-toolbar-title {
+  font-size: 1.3rem !important;
+  font-weight: bold;
+  color: var(--red);
+}
+
+/* Calendar Buttons */
+.fc-button {
+  background-color: var(--amber) !important;
+  border: none !important;
+  color: white !important;
+  border-radius: 6px !important;
+  padding: 6px 12px !important;
+  font-weight: 500;
+}
+
+.fc-button:hover {
+  background-color: var(--deep-orange) !important;
+  transform: scale(1.05);
+}
+
+/* Calendar Event Appearance */
+.fc-event {
+  font-size: 0.85rem;
+  padding: 4px 8px;
+  border-radius: 0.5rem;
+  border: none;
+  font-weight: 500;
+}
+
+/* Approved Events */
+.fc-event.approved {
+  background-color: var(--amber) !important;
+  color: white;
+}
+
+/* Pending Events */
+.fc-event.pending {
+  background-color: var(--deep-orange) !important;
+  color: white;
+}
+
+/* Event Hover */
+.fc-event:hover {
+  filter: brightness(1.1);
+  cursor: pointer;
+}
+
+/* Dropdown Filter */
+#facilityFilter {
+  border: 1px solid var(--amber);
+  border-radius: 10px;
+  padding: 8px;
+  color: #333;
+  font-weight: 500;
+}
+.logo-img {
+  width: 100px !important;
+  max-width: 50%;
+  height: auto;
+  display: block;
+  margin: 0 auto;
+}
+@media (max-width: 500px) {
+  .logo-img {
+    width: 100px !important;
+  }
+}
+
+tr.export-visible {
+  display: table-row !important;
+}
+
