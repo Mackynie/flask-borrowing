@@ -104,8 +104,6 @@ id_picture_path = f"id_pictures/{id_filename}"       # relative to static/
 selfie_picture_path = f"selfie_pictures/{selfie_filename}"
 
 # Save the files
-id_picture.save(os.path.join('static', id_picture_path))
-selfie_picture.save(os.path.join('static', selfie_picture_path))
 
 
 TEXTBEE_API_KEY = os.environ.get('TEXTBEE_API_KEY')
