@@ -582,9 +582,7 @@ def help_page():
 
 @app.route('/api/register', methods=['POST'])
 def register_resident():
-    def register_resident():
     data = request.get_json()  # Read JSON payload
-
     full_name = data.get('full_name')
     gender = data.get('gender')
     purok = data.get('purok')
