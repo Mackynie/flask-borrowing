@@ -1,6 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <meta charset="UTF-8">
   <title>History Report - BARMA</title>
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css">
@@ -8,81 +9,35 @@
   <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
   <link rel="stylesheet" href="https://unpkg.com/aos@2.3.1/dist/aos.css" />
   <style>
+    /* Input & search styles */
     .input-group .form-control,
-    .input-group .form-select {
-      box-shadow: none !important;
-    }
-    .input-group-text {
-      background-color: #fff !important;
-      border-right: none !important;
-      border-top-right-radius: 0 !important;
-      border-bottom-right-radius: 0 !important;
-    }
+    .input-group .form-select { box-shadow: none !important; }
+    .input-group-text { background-color: #fff !important; border-right: none !important; border-radius: 0; }
     .form-control.border-start-0,
-    .form-select.border-start-0 {
-      border-left: none !important;
-      border-top-left-radius: 0 !important;
-      border-bottom-left-radius: 0 !important;
-    }
-    .input-group .bi {
-      font-size: 1rem;
-      vertical-align: middle;
-    }
-    .input-group:focus-within {
-      border-color: #0d6efd;
-      box-shadow: 0 0 0 0.2rem rgba(13, 110, 253, 0.25);
-    }
-    #statusFilter {
-      border: 1px solid #FFC100 !important;
-      box-shadow: none !important;
-    }
-    #statusFilter:focus {
-      border-color: #FFC100 !important;
-      box-shadow: 0 0 0 0.25rem rgba(255, 193, 0, 0.25) !important;
-    }
+    .form-select.border-start-0 { border-left: none !important; border-radius: 0; }
+    .input-group .bi { font-size: 1rem; vertical-align: middle; }
+    .input-group:focus-within { border-color: #0d6efd; box-shadow: 0 0 0 0.2rem rgba(13,110,253,0.25); }
+
+    #statusFilter { border: 1px solid #FFC100 !important; }
+    #statusFilter:focus { border-color: #FFC100 !important; box-shadow: 0 0 0 0.25rem rgba(255,193,0,0.25); }
+
     .badge-approved { background-color: #28a745; color: white; }
     .badge-rejected { background-color: #dc3545; color: white; }
     .badge-returned { background-color: #0d6efd; color: white; }
-    .badge-pending { background-color: #ffc107; color: black; }
+
+
     .export-only { display: none; }
     .screen-only { display: block; }
+
     @media print {
-      body {
-        padding: 20px;
-        margin: 0;
-        font-size: 14px;
-        background: white;
-        color: black;
-        font-family: 'Segoe UI', sans-serif;
-      }
-      .sidebar, .btn, .form-control, select, .screen-only, .print-hide {
-        display: none !important;
-      }
+      body { padding: 20px; font-size: 14px; background: white; color: black; font-family: 'Segoe UI', sans-serif; }
+      .sidebar, .btn, .form-control, select, .screen-only, .print-hide { display: none !important; }
       .export-only { display: block; }
-      .card {
-        border: none !important;
-        box-shadow: none !important;
-      }
-      .table {
-        border-collapse: collapse !important;
-        width: 100% !important;
-      }
-      .table th, .table td {
-        border: 1px solid black !important;
-        padding: 6px !important;
-        text-align: center !important;
-        color: black !important;
-      }
-      .table th {
-        background-color: #f0f0f0 !important;
-        font-weight: bold;
-      }
-      .badge {
-        background: none !important;
-        color: black !important;
-        font-weight: normal !important;
-        padding: 0 !important;
-      }
+      .card { border: none !important; box-shadow: none !important; }
+      .table { border-collapse: collapse !important; width: 100% !important; }
+      .table th, .table td { border: 1px solid black !important; padding: 6px !important; text-align: center !important; color: black !important; }
+      .table th { background-color: #f0f0f0 !important; font-weight: bold; }
+      .badge { background: none !important; color: black !important; font-weight: normal !important; padding: 0 !important; }
     }
   </style>
 </head>
@@ -104,10 +59,14 @@
         <li class="nav-item"><a class="nav-link" href="{{ url_for('borrowings_page') }}"><i class="bi bi-arrow-left-right me-2"></i>Borrowing</a></li>
         <li class="nav-item"><a class="nav-link" href="{{ url_for('manage_accounts') }}"><i class="bi bi-people-fill me-2"></i>Accounts</a></li>
         <li class="nav-item"><a class="nav-link active" href="{{ url_for('history_page') }}"><i class="bi bi-clock-history me-2"></i>History</a></li>
+        <li class="nav-item">
+            <a class="nav-link" href="{{ url_for('help_page') }}">
+                <i class="bi bi-question-circle me-2"></i>Guide
+            </a>
+        </li>
+
         <li class="nav-item logout-btn mt-3 text-center">
-          <a href="{{ url_for('logout') }}" class="btn btn-outline-light w-75">
-            <i class="bi bi-box-arrow-right me-2"></i>Logout
-          </a>
+          <a href="{{ url_for('logout') }}" class="btn btn-outline-light w-75"><i class="bi bi-box-arrow-right me-2"></i>Logout</a>
         </li>
       </ul>
     </nav>
@@ -119,27 +78,20 @@
       <!-- Filters -->
       <div class="screen-only d-flex gap-2 mb-4 align-items-center flex-wrap">
         <div class="input-group" style="width: 250px;">
-          <span class="input-group-text bg-white border-end-0">
-            <i class="bi bi-search text-muted"></i>
-          </span>
+          <span class="input-group-text bg-white border-end-0"><i class="bi bi-search text-muted"></i></span>
           <input type="text" id="searchInput" class="form-control border-start-0" placeholder="Search name, item, or status">
         </div>
         <div class="input-group" style="width: 200px;">
-          <span class="input-group-text bg-white border-end-0">
-            <i class="bi bi-calendar-event text-muted"></i>
-          </span>
+          <span class="input-group-text bg-white border-end-0"><i class="bi bi-calendar-event text-muted"></i></span>
           <input type="date" id="dateFilter" class="form-control border-start-0">
         </div>
         <div class="input-group" style="width: 200px;">
-          <span class="input-group-text bg-white border-end-0">
-            <i class="bi bi-funnel text-muted"></i>
-          </span>
+          <span class="input-group-text bg-white border-end-0"><i class="bi bi-funnel text-muted"></i></span>
           <select id="statusFilter" class="form-select border-start-0">
             <option value="">All Statuses</option>
             <option value="Approved">Approved</option>
             <option value="Rejected">Rejected</option>
             <option value="Returned">Returned</option>
-            <option value="Pending">Pending</option>
           </select>
         </div>
       </div>
@@ -149,26 +101,13 @@
         <div class="card-body">
           <div class="d-flex justify-content-between mt-3">
             <div class="btn-group">
-              <button class="btn btn-sm text-white" style="background-color: #a10b0b;" onclick="filterByType('Borrowing')">
-                <i class="bi bi-arrow-left-right me-1"></i> Borrowing
-              </button>
-              <button class="btn btn-sm text-white" style="background-color: #FF8A08;" onclick="filterByType('Reservation')">
-                <i class="bi bi-calendar-check me-1"></i> Reservation
-              </button>
-              <button class="btn btn-sm text-dark" style="background-color: #FFC100;" onclick="filterByType('')">
-                <i class="bi bi-list-ul me-1"></i> Show All
-              </button>
+              <button class="btn btn-sm text-white" style="background-color: #a10b0b;" onclick="filterByType('Borrowing')"><i class="bi bi-arrow-left-right me-1"></i> Borrowing</button>
+              <button class="btn btn-sm text-white" style="background-color: #FF8A08;" onclick="filterByType('Reservation')"><i class="bi bi-calendar-check me-1"></i> Reservation</button>
+              <button class="btn btn-sm text-dark" style="background-color: #FFC100;" onclick="filterByType('')"><i class="bi bi-list-ul me-1"></i> Show All</button>
             </div>
             <div class="btn-group">
-              <button class="btn btn-sm text-white" style="background-color: #0056b3;" onclick="exportFilteredToWord()">
-                <i class="bi bi-file-earmark-word me-1"></i> Export to Word
-              </button>
-              <button class="btn btn-sm text-white" style="background-color: #b30000;" onclick="exportFilteredToPDF()">
-                <i class="bi bi-filetype-pdf me-1"></i> Export to PDF
-              </button>
-              <button class="btn btn-sm text-dark" style="background-color: #FFC100;" onclick="printReport()">
-                <i class="bi bi-printer me-1"></i> Print
-              </button>
+              <button class="btn btn-sm text-white" style="background-color: #b30000;" onclick="exportFilteredToPDF()"><i class="bi bi-filetype-pdf me-1"></i> Export to PDF</button>
+              <button class="btn btn-sm text-dark" style="background-color: #FFC100;" onclick="printReport()"><i class="bi bi-printer me-1"></i> Print</button>
             </div>
           </div>
 
@@ -188,7 +127,7 @@
               </thead>
               <tbody>
                 {% for h in history_logs %}
-                <tr>
+                <tr class="export-visible">
                   <td>{{ h.type }}</td>
                   <td>{{ h.resident_name }}</td>
                   <td>{{ h.item }}</td>
@@ -209,226 +148,202 @@
   </div>
 </div>
 
+<!-- Scripts -->
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
 <script src="https://unpkg.com/aos@2.3.1/dist/aos.js"></script>
-<script>AOS.init();</script>
-
 <script>
-  let currentTypeFilter = '';
+AOS.init();
+let currentTypeFilter = '';
 
-  function getFilterInfo() {
-    const search = document.getElementById('searchInput').value || 'All';
-    const date = document.getElementById('dateFilter').value || 'All';
-    const status = document.getElementById('statusFilter').value || 'All';
-    const type = currentTypeFilter || 'All';
-    return { search, date, status, type };
-  }
+function getFilterInfo() {
+  const search = document.getElementById('searchInput').value || 'All';
+  const date = document.getElementById('dateFilter').value || 'All';
+  const status = document.getElementById('statusFilter').value || 'All';
+  const type = currentTypeFilter || 'All';
+  return { search, date, status, type };
+}
 
-  // -------- Header, Title & Footer builders ----------
-  function buildExportHeader() {
-    return `
-      <div style="margin-bottom:8px;">
-        <div style="display:flex; align-items:center; justify-content:space-between;">
-          <!-- Left: Barangay Logo -->
-          <div style="flex:0 0 auto; margin-right:15px;">
-            <img src="{{ url_for('static', filename='img/POB5.jpg') }}"
-                 alt="Barangay Logo" style="height:60px; vertical-align:middle;">
-          </div>
+function applyFilters() {
+  const { search, date, status, type } = getFilterInfo();
+  const searchTerm = search.toLowerCase();
+  const rows = document.querySelectorAll('#historyTable tbody tr');
 
-          <!-- Center: Text Info -->
-          <div style="flex:1; text-align:center;">
-            <div style="font-weight:700; font-size:18px; letter-spacing:.3px; margin:0;">POBLACION 5</div>
-            <div style="font-size:12px; margin:0;">Poblacion 5, Midsayap, Cotabato</div>
-            <div style="font-size:11px; margin:2px 0 0 0;">BARMA</div>
-            <div style="margin-top:6px; border-top:1px solid #000;"></div>
-          </div>
+  rows.forEach(row => {
+    const cells = row.querySelectorAll('td');
+    const rowText = row.textContent.toLowerCase();
+    const rowDate = cells[5]?.textContent.trim().split(' ')[0];
+    const rowStatus = cells[6]?.textContent.trim();
+    const rowType = cells[0]?.textContent.trim();
 
-          <!-- Right: BARMA Logo -->
-          <div style="flex:0 0 auto; margin-left:15px;">
-            <img src="{{ url_for('static', filename='img/logo3.png') }}"
-                 alt="BARMA Logo" style="height:90px; vertical-align:middle;">
-          </div>
-        </div>
-      </div>
-    `;
-  }
+    const matchesSearch = search === 'All' || rowText.includes(searchTerm);
+    const matchesDate = date === 'All' || rowDate === date;
+    const matchesStatus = status === 'All' || rowStatus === status;
+    const matchesType = type === 'All' || rowType === type;
 
-  function buildReportTitle() {
-    const { search, date, status, type } = getFilterInfo();
-    let appliedFilters = [];
-
-    if (type !== 'All') appliedFilters.push(`Type: ${type}`);
-    if (date !== 'All') appliedFilters.push(`Date: ${date}`);
-    if (status !== 'All') appliedFilters.push(`Status: ${status}`);
-    if (search !== 'All') appliedFilters.push(`Search: ${search}`);
-
-    let filterText = appliedFilters.length > 0
-        ? `Filtered to: ${appliedFilters.join(', ')}`
-        : 'No filters applied';
-
-    return `
-      <div style="text-align:center; margin:12px 0;">
-        <div style="font-weight:700; font-size:14px; margin:0;">HISTORY REPORT</div>
-        <div style="font-size:12px; margin:0;">${filterText}</div>
-      </div>
-    `;
-  }
-
-  function buildExportFooter() {
-    const today = new Date().toLocaleDateString();
-    return `<div style="font-size:12px; margin-top:8px;">Print date: ${today}</div>`;
-  }
-  // ---------------------------------------------------
-
-  function filterTable() {
-    const { search, date, status } = getFilterInfo();
-    const searchTerm = search.toLowerCase();
-    const rows = document.querySelectorAll('#historyTable tbody tr');
-
-    rows.forEach(row => {
-      const cells = row.querySelectorAll('td');
-      const rowText = row.textContent.toLowerCase();
-      const rowDate = cells[5]?.textContent.trim().split(' ')[0];
-      const rowStatus = cells[6]?.textContent.trim();
-      const matchesSearch = search === 'All' || rowText.includes(searchTerm);
-      const matchesDate = date === 'All' || rowDate === date;
-      const matchesStatus = status === 'All' || rowStatus === status;
-      row.style.display = (matchesSearch && matchesDate && matchesStatus) ? '' : 'none';
-      row.classList.toggle('export-visible', (matchesSearch && matchesDate && matchesStatus));
-    });
-  }
-
-  function filterByType(type) {
-    currentTypeFilter = type;
-    const rows = document.querySelectorAll('#historyTable tbody tr');
-    rows.forEach(row => {
-      const typeCell = row.querySelector('td:nth-child(1)');
-      if (!type || (typeCell && typeCell.textContent.trim() === type)) {
-        row.style.display = '';
-        row.classList.add('export-visible');
-      } else {
-        row.style.display = 'none';
-        row.classList.remove('export-visible');
-      }
-    });
-  }
-
-  function getFilteredFilename(base, ext) {
-    const { type, date, status } = getFilterInfo();
-    let parts = [];
-    if (type !== 'All') parts.push(type);
-    if (date !== 'All') parts.push(date);
-    if (status !== 'All') parts.push(status);
-    return base + (parts.length ? '-' + parts.join('_') : '') + '.' + ext;
-  }
-
-  function exportFilteredToWord() {
-    const rows = document.querySelectorAll('#historyTable tbody tr.export-visible');
-    if (rows.length === 0) return alert('No visible records to export.');
-
-    let html = `<html><head><meta charset="utf-8"><style>
-      body { font-family: Arial, sans-serif; font-size: 13px; color: #000; }
-      table { width: 100%; border-collapse: collapse; }
-      th, td { border: 1px solid #000; padding: 6px; text-align: center; }
-      th { background-color: #f0f0f0; font-weight: bold; }
-    </style></head><body>
-      ${buildExportHeader()}
-      ${buildReportTitle()}
-      <table>${document.querySelector('#historyTable thead').outerHTML}<tbody>`;
-
-    rows.forEach(row => html += `<tr>${row.innerHTML}</tr>`);
-    html += `</tbody></table>${buildExportFooter()}</body></html>`;
-
-    const blob = new Blob(['\ufeff' + html], { type: 'application/msword' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = getFilteredFilename('BARMA-History-Report-', 'doc');
-    a.click();
-    URL.revokeObjectURL(url);
-  }
-
-  function exportFilteredToPDF() {
-  const rows = document.querySelectorAll('#historyTable tbody tr.export-visible');
-  if (rows.length === 0) return alert('No visible records to export.');
-
-  const tableClone = document.getElementById('historyTable').cloneNode(true);
-  const tbody = tableClone.querySelector('tbody');
-  Array.from(tbody.rows).forEach(row => {
-    if (!row.classList.contains('export-visible')) tbody.removeChild(row);
+    const visible = matchesSearch && matchesDate && matchesStatus && matchesType;
+    row.style.display = visible ? '' : 'none';
+    row.classList.toggle('export-visible', visible);
   });
+}
 
-  const container = document.createElement('div');
-  container.innerHTML = `
-    <style>
-      table { border-collapse: collapse; width: 100%; }
-      th, td {
-        border: 1px solid #000 !important;
-        padding: 6px;
-        text-align: center;
-        font-size: 12px;
-        color: #000 !important;
-        word-wrap: break-word;
-        white-space: normal;
-      }
-      th { background: #f0f0f0; font-weight: bold; }
-      td:nth-child(6), th:nth-child(6) { white-space: nowrap !important; }
-    </style>
-    ${buildExportHeader()}${buildReportTitle()}
+function filterByType(type) {
+  currentTypeFilter = type; // set the type filter
+  applyFilters();           // re-apply all filters together
+}
+
+// hook up all events
+document.getElementById('searchInput').addEventListener('input', applyFilters);
+document.getElementById('dateFilter').addEventListener('change', applyFilters);
+document.getElementById('statusFilter').addEventListener('change', applyFilters);
+
+// initial render
+applyFilters();
+
+async function toBase64(url) {
+  const response = await fetch(url, {cache: "no-store"});
+  const blob = await response.blob();
+  return new Promise((resolve) => {
+    const reader = new FileReader();
+    reader.onloadend = () => resolve(reader.result);
+    reader.readAsDataURL(blob);
+  });
+}
+
+async function buildExportHeader() {
+  const pob5Logo = await toBase64("{{ url_for('static', filename='img/POB5.jpg') }}");
+  const barmaLogo = await toBase64("{{ url_for('static', filename='img/logo3.png') }}");
+
+  return `
+    <div style="position: relative; text-align: center; margin-bottom: 8px; height: 100px;">
+      <img src="${pob5Logo}" style="position: absolute; left: 0; top: 40%; transform: translateY(-50%); height: 60px; opacity: 1; z-index: 0;" />
+      <img src="${barmaLogo}" style="position: absolute; right: 0; top: 40%; transform: translateY(-50%); height: 100px; opacity: 1; z-index: 0;" />
+      <div style="position: relative; z-index: 1;">
+        <div style="font-weight:700; font-size:18px;">POBLACION 5</div>
+        <div style="font-size:12px;">Poblacion 5, Midsayap, Cotabato</div>
+        <div style="font-size:11px; margin-top:2px;">BARMA</div>
+        <div style="margin:6px auto 0; width: 75%; border-top:1px solid #000;"></div>
+      </div>
+    </div>
   `;
-  container.appendChild(tableClone);
-  container.innerHTML += buildExportFooter();
+}
 
-  html2pdf()
-    .set({
-      margin: [0.5, 0.5, 0.5, 0.5],
-      filename: getFilteredFilename('BARMA-History-Report-', 'pdf'),
-      image: { type: 'jpeg', quality: 1 },
-      html2canvas: { scale: 2, useCORS: true },
-      jsPDF: { unit: 'in', format: 'letter', orientation: 'portrait' }
-    })
-    .from(container)
-    .save();
+function buildReportTitle() {
+  const { search, date, status, type } = getFilterInfo();
+  let appliedFilters = [];
+  if (type !== 'All') appliedFilters.push(`Type: ${type}`);
+  if (date !== 'All') appliedFilters.push(`Date: ${date}`);
+  if (status !== 'All') appliedFilters.push(`Status: ${status}`);
+  if (search !== 'All') appliedFilters.push(`Search: ${search}`);
+  const filterText = appliedFilters.length ? `Filtered to: ${appliedFilters.join(', ')}` : 'No filters applied';
+  return `<div style="text-align:center; margin:12px 0;">
+    <div style="font-weight:700; font-size:14px;">HISTORY REPORT</div>
+    <div style="font-size:12px;">${filterText}</div>
+  </div>`;
+}
+
+// ✅ Updated Footer to include "Printed by"
+function buildExportFooter() {
+  const today = new Date().toLocaleDateString();
+  const printedBy = "{{ username }}"; // injected from Flask
+  return `
+    <div style="font-size:12px; margin-top:12px; display:flex; justify-content:space-between;">
+      <div>Print date: ${today}</div>
+      <div>Printed by: ${printedBy}</div>
+    </div>
+  `;
 }
 
 
-  function printReport() {
-    const rows = document.querySelectorAll('#historyTable tbody tr.export-visible');
-    if (rows.length === 0) return alert('No visible records to print.');
 
-    const tableClone = document.getElementById('historyTable').cloneNode(true);
-    const tbody = tableClone.querySelector('tbody');
-    Array.from(tbody.rows).forEach(row => {
-      if (!row.classList.contains('export-visible')) tbody.removeChild(row);
-    });
+// PDF Export
+async function exportFilteredToPDF() {
+  const rows = document.querySelectorAll('#historyTable tbody tr.export-visible');
+  if (!rows.length) return alert('No visible records to export.');
+  
+  const header = await buildExportHeader();
+  const tableClone = document.getElementById('historyTable').cloneNode(true);
+  const tbody = tableClone.querySelector('tbody');
+  Array.from(tbody.rows).forEach(r => { if (!r.classList.contains('export-visible')) tbody.removeChild(r); });
 
-    const style = `
-      <style>
-        body { font-family: Arial, sans-serif; padding: 20px; color: #000; }
-        table { width: 100%; border-collapse: collapse; }
-        th, td { border: 1px solid black; padding: 6px; text-align: center; color: black; }
-        th { background-color: #f0f0f0; font-weight: bold; }
-      </style>
-    `;
+  tableClone.style.borderCollapse = 'collapse';
+  tableClone.querySelectorAll('th,td').forEach(c => {
+    c.style.border = '0.5px solid black';
+    c.style.padding = '4px';
+    c.style.textAlign = 'center';
+    c.style.fontSize = '12px';
+  });
+  tableClone.querySelectorAll('th').forEach(c => c.style.fontWeight = 'bold');
 
-    const printWindow = window.open('', '', 'width=800,height=600');
-    printWindow.document.write(`<html><head><title>Print</title>${style}</head><body>
-      ${buildExportHeader()}
-      ${buildReportTitle()}
-      ${tableClone.outerHTML}
-      ${buildExportFooter()}
-    </body></html>`);
-    printWindow.document.close();
+  const container = document.createElement('div');
+  container.innerHTML = header + buildReportTitle();
+  container.appendChild(tableClone);
+  const footer = document.createElement('div');
+  footer.innerHTML = buildExportFooter();
+  container.appendChild(footer);
+
+  html2pdf().from(container).set({
+    margin: [0.5, 0.5, 0.5, 0.5],
+    filename: 'BARMA-History-Report.pdf',
+    image: { type: 'jpeg', quality: 1 },
+    html2canvas: { scale: 2 },
+    jsPDF: { unit: 'in', format: 'letter', orientation: 'portrait' }
+  }).save();
+}
+
+
+async function printReport() {
+  const rows = document.querySelectorAll('#historyTable tbody tr.export-visible');
+  if (!rows.length) return alert('No visible records to print.');
+
+  const header = await buildExportHeader();
+  const title = buildReportTitle();
+  const footer = buildExportFooter();
+  const tableClone = document.getElementById('historyTable').cloneNode(true);
+  Array.from(tableClone.querySelectorAll('tbody tr')).forEach(r => { 
+    if (!r.classList.contains('export-visible')) r.remove(); 
+  });
+
+  const style = `
+    <style>
+      body { font-family: Arial, sans-serif; padding: 20px; color: #000; }
+      table { border-collapse: collapse; width: 100%; margin-top: 8px; }
+      th, td { border: 0.5px solid black; padding: 4px; text-align: center; font-size: 12px; }
+      th { font-weight: bold; }
+      img { vertical-align: middle; }
+    </style>
+  `;
+
+  const printWindow = window.open('', '_blank', 'width=800,height=600');
+  printWindow.document.write(`
+    <html>
+      <head>
+        <title>Print</title>
+        ${style}
+      </head>
+      <body>
+        ${header}
+        ${title}
+        ${tableClone.outerHTML}
+        ${footer}
+      </body>
+    </html>
+  `);
+  printWindow.document.close();
+
+  // Wait for all images to load
+  printWindow.onload = () => {
     printWindow.focus();
     printWindow.print();
-  }
+  };
+}
 
-  document.getElementById('searchInput').addEventListener('input', filterTable);
-  document.getElementById('dateFilter').addEventListener('change', filterTable);
-  document.getElementById('statusFilter').addEventListener('change', filterTable);
-  filterTable();
+
+
+document.getElementById('searchInput').addEventListener('input', filterTable);
+document.getElementById('dateFilter').addEventListener('change', filterTable);
+document.getElementById('statusFilter').addEventListener('change', filterTable);
+filterTable();
 </script>
-
 </body>
 </html>

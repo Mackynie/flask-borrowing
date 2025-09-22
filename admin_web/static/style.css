@@ -328,3 +328,90 @@ tr.export-visible {
   display: table-row !important;
 }
 
+.table-responsive {
+  overflow-x: auto;
+}
+
+.card {
+  width: 100%;
+}
+
+/* =========================
+   RESPONSIVENESS
+========================= */
+
+/* For tablets and small laptops (max 992px) */
+@media (max-width: 992px) {
+  .sidebar {
+    min-height: auto;
+    width: 100%;
+    position: relative;
+  }
+  .sidebar .nav-link {
+    font-size: 1rem;
+    padding: 10px;
+    text-align: center;
+  }
+  .header-title {
+    font-size: 2rem;
+  }
+}
+
+/* For mobile phones (max 768px) */
+@media (max-width: 768px) {
+  .sidebar {
+    position: relative;
+    width: 100%;
+    min-height: auto;
+  }
+
+  .card {
+    margin: 10px 0;
+    padding: 12px;
+  }
+
+  .search-wrapper {
+    max-width: 100%;
+    margin: 10px auto;
+  }
+
+  .table-responsive {
+    font-size: 0.9rem;
+  }
+
+  .header-title {
+    font-size: 1.8rem;
+    top: 10px;
+  }
+}
+
+/* For very small phones (max 480px) */
+@media (max-width: 480px) {
+  .sidebar {
+    font-size: 0.9rem;
+    text-align: center;
+  }
+
+  .sidebar .nav-link {
+    padding: 8px;
+    font-size: 0.9rem;
+  }
+
+  .card {
+    padding: 10px;
+    font-size: 0.9rem;
+  }
+
+  .btn {
+    padding: 6px 12px;
+    font-size: 0.9rem;
+  }
+
+  .header-title {
+    font-size: 1.5rem;
+  }
+
+  .logo-img {
+    width: 80px !important;
+  }
+}

@@ -1,0 +1,19 @@
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+env/
+venv/
+.venv/
+.env
+instance/
+
+# DB dumps and uploads
+*.sql
+id_pictures/
+selfie_pictures/
+
+# OS junk
+.DS_Store
+Thumbs.db

@@ -1,6 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <meta charset="UTF-8">
   <title>Reservation Assets - BARMA</title>
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css">
@@ -36,6 +37,12 @@
         <li class="nav-item"><a class="nav-link" href="{{ url_for('borrowings_page') }}"><i class="bi bi-arrow-left-right me-2"></i>Borrowing</a></li>
         <li class="nav-item"><a class="nav-link" href="{{ url_for('manage_accounts') }}"><i class="bi bi-people-fill me-2"></i>Accounts</a></li>
         <li class="nav-item"><a class="nav-link" href="{{ url_for('history_page') }}"><i class="bi bi-clock-history me-2"></i>History</a></li>
+        <li class="nav-item">
+            <a class="nav-link" href="{{ url_for('help_page') }}">
+                <i class="bi bi-question-circle me-2"></i>Guide
+            </a>
+        </li>
+
         <li class="nav-item logout-btn mt-3 text-center">
           <a href="{{ url_for('logout') }}" class="btn btn-outline-light w-75"><i class="bi bi-box-arrow-right me-2"></i>Logout</a>
         </li>
@@ -57,12 +64,8 @@
       <!-- Reserved Items Table -->
       <div class="card shadow-sm mb-4" data-aos="fade-up">
         <div class="card-body">
-          <div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
-            <br>
+          <div class="d-flex justify-content-end align-items-center mb-3 flex-wrap gap-2">
             <div class="btn-group screen-only">
-              <button class="btn btn-sm text-white" style="background-color: #0056b3;" onclick="exportFilteredToWord()">
-                <i class="bi bi-file-earmark-word me-1"></i> Export to Word
-              </button>
               <button class="btn btn-sm text-white" style="background-color: #b30000;" onclick="exportFilteredToPDF()">
                 <i class="bi bi-filetype-pdf me-1"></i> Export to PDF
               </button>
@@ -72,16 +75,25 @@
             </div>
           </div>
 
+          <!-- Updated Table -->
           <div class="table-responsive">
             <table class="table table-hover table-bordered align-middle" id="reservationTable">
               <thead class="table-light">
-                <tr><th>#</th><th>Asset Name</th></tr>
+                <tr>
+                  <th>#</th>
+                  <th>Asset Name</th>
+                </tr>
               </thead>
               <tbody>
-                {% for item in reserved_items %}
-                <tr><td>{{ loop.index }}</td><td>{{ item }}</td></tr>
+                {% for asset in reservable_assets %}
+                <tr>
+                  <td>{{ loop.index }}</td>
+                  <td>{{ asset.name }}</td>
+                </tr>
                 {% else %}
-                <tr><td colspan="2" class="text-center text-muted">No assets currently under reservation.</td></tr>
+                <tr>
+                  <td colspan="2" class="text-center text-muted">No assets available for reservation.</td>
+                </tr>
                 {% endfor %}
               </tbody>
             </table>
@@ -108,7 +120,6 @@
         <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
       </div>
       <div class="modal-body">
-        <!-- Facility Filter -->
         <div class="mb-3">
           <label for="facilityFilter" class="form-label">Filter by Facility:</label>
           <select id="facilityFilter" class="form-select w-50">
@@ -118,7 +129,6 @@
             {% endfor %}
           </select>
         </div>
-        <!-- Calendar -->
         <div id="calendar"></div>
       </div>
     </div>
@@ -132,200 +142,87 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
 <script src="https://unpkg.com/docx@8.5.0/build/index.umd.js"></script>
 
+<script>const adminName = "{{ admin_name }}";</script>
+
 <script>
 AOS.init();
 
-document.addEventListener('DOMContentLoaded', function () {
-  const calendarEl = document.getElementById('calendar');
-  const facilityFilter = document.getElementById('facilityFilter');
-  let allEvents = [];
-
-  const calendar = new FullCalendar.Calendar(calendarEl, {
-    initialView: 'dayGridMonth',
-    height: 550,
-    headerToolbar: { left: 'prev,next today', center: 'title', right: 'dayGridMonth,listWeek' },
-    eventDidMount: function(info) {
-      new bootstrap.Tooltip(info.el, {
-        title: `Reserved by: ${info.event.extendedProps.resident_name}\nStatus: ${info.event.extendedProps.status}\nPurpose: ${info.event.extendedProps.purpose || 'N/A'}`,
-        placement: 'top',
-        trigger: 'hover',
-        container: 'body'
-      });
-    },
-    eventClick: function(info) {
-      const details = info.event.extendedProps;
-      alert(`Facility: ${info.event.title}\nReserved by: ${details.resident_name}\nDate: ${info.event.startStr}\nPurpose: ${details.purpose || 'N/A'}`);
-    },
-    eventContent: function(arg) {
-      const resident = arg.event.extendedProps.resident_name || 'N/A';
-      const purpose = arg.event.extendedProps.purpose || 'N/A';
-      return { html: `<div><strong>${arg.event.title}</strong><br><small>By: ${resident}</small><br><small>Purpose: ${purpose}</small></div>` };
-    }
-  });
-
-  fetch('/api/reservation-events').then(r => r.json()).then(events => {
-    allEvents = events;
-    calendar.removeAllEvents();
-    calendar.addEventSource(allEvents);
-  });
-
-  document.getElementById('calendarModal').addEventListener('shown.bs.modal', function () {
-    calendar.render();
-  });
-
-  facilityFilter.addEventListener('change', function () {
-    const selected = facilityFilter.value;
-    const filtered = selected === 'all' ? allEvents : allEvents.filter(e => e.title === selected);
-    calendar.removeAllEvents();
-    calendar.addEventSource(filtered);
-  });
-});
-
-// ---------------------- Table Filter -------------------------
+// Table Filter
 function filterTable() {
   const searchTerm = document.getElementById('searchInput').value.toLowerCase();
   const rows = document.querySelectorAll('#reservationTable tbody tr');
   rows.forEach(row => {
     const rowText = row.textContent.toLowerCase();
-    const match = rowText.includes(searchTerm);
-    row.style.display = match ? '' : 'none';
-    // Apply export-visible class if row is visible
-    if (match) row.classList.add('export-visible');
-    else row.classList.remove('export-visible');
+    row.style.display = rowText.includes(searchTerm) ? '' : 'none';
   });
 }
-
-// ---------------------- Export Helpers -------------------------
-async function toBase64(url) {
-  const response = await fetch(url, { cache: "no-store" });
-  const blob = await response.blob();
-  return new Promise(resolve => { const reader = new FileReader(); reader.onloadend = () => resolve(reader.result); reader.readAsDataURL(blob); });
-}
-
-async function buildExportHeader() {
-  const pob5Logo = await toBase64("{{ url_for('static', filename='img/POB5.jpg') }}");
-  const barmaLogo = await toBase64("{{ url_for('static', filename='img/logo3.png') }}");
-  return `
-    <div style="margin-bottom:8px; display:flex; align-items:center; justify-content:space-between;">
-      <div><img src="${pob5Logo}" alt="POBLACION 5 Logo" style="height:60px;"></div>
-      <div style="text-align:center;">
-        <div style="font-weight:700; font-size:18px;">POBLACION 5</div>
-        <div style="font-size:12px;">Poblacion 5, Midsayap, Cotabato</div>
-        <div style="font-size:11px;">BARMA</div>
-        <div style="margin-top:6px; border-top:1px solid #000;"></div>
-      </div>
-      <div><img src="${barmaLogo}" alt="BARMA Logo" style="height:90px;"></div>
-    </div>
-  `;
-}
-
-function buildReportTitle() {
-  const search = document.getElementById('searchInput').value || 'All';
-  return `<div style="text-align:center; margin:12px 0;"><div style="font-weight:700; font-size:14px;">RESERVATION ASSETS REPORT</div><div style="font-size:12px;">Search Filter: ${search}</div></div>`;
-}
-
-function buildExportFooter() {
-  return `<div style="font-size:12px; margin-top:8px;">Print date: ${new Date().toLocaleDateString()}</div>`;
-}
-
-// ---------------------- DOCX Export -------------------------
-async function exportFilteredToWord() {
-  const rows = Array.from(document.querySelectorAll('#reservationTable tbody tr')).filter(r => r.style.display !== 'none');
-  if (!rows.length) return alert('No visible records to export.');
-
-  const { Document, Packer, Paragraph, TextRun, Table, TableRow, TableCell, WidthType, AlignmentType, ImageRun, BorderStyle } = docx;
-
-  const pob5ArrayBuf = await fetch("{{ url_for('static', filename='img/POB5.jpg') }}").then(r => r.arrayBuffer());
-  const barmaArrayBuf = await fetch("{{ url_for('static', filename='img/logo3.png') }}").then(r => r.arrayBuffer());
-
-  const headerTable = new Table({
-    width: { size: 100, type: WidthType.PERCENTAGE },
-    borders: { top:{style:BorderStyle.NONE}, bottom:{style:BorderStyle.NONE}, left:{style:BorderStyle.NONE}, right:{style:BorderStyle.NONE}, insideHorizontal:{style:BorderStyle.NONE}, insideVertical:{style:BorderStyle.NONE} },
-    rows: [
-      new TableRow({ children: [
-        new TableCell({ width:{size:20,type:WidthType.PERCENTAGE}, children:[new Paragraph({ children:[new ImageRun({data:pob5ArrayBuf, transformation:{width:60,height:60}})] })] }),
-        new TableCell({ width:{size:60,type:WidthType.PERCENTAGE}, children:[
-          new Paragraph({ alignment: AlignmentType.CENTER, children:[new TextRun({text:"POBLACION 5", bold:true, size:28})] }),
-          new Paragraph({ alignment: AlignmentType.CENTER, children:[new TextRun({text:"Poblacion 5, Midsayap, Cotabato", size:20})] }),
-          new Paragraph({ alignment: AlignmentType.CENTER, children:[new TextRun({text:"BARMA", size:18})] })
-        ] }),
-        new TableCell({ width:{size:20,type:WidthType.PERCENTAGE}, children:[new Paragraph({ alignment: AlignmentType.RIGHT, children:[new ImageRun({data:barmaArrayBuf, transformation:{width:70,height:70}})]})] })
-      ] })
-    ]
-  });
-
-  const titlePara = new Paragraph({ alignment: AlignmentType.CENTER, spacing:{before:200, after:60}, children:[new TextRun({text:"RESERVATION ASSETS REPORT", bold:true, size:26})] });
-  const filterPara = new Paragraph({ alignment: AlignmentType.CENTER, spacing:{after:200}, children:[new TextRun({text:`Search Filter: ${document.getElementById('searchInput').value || 'All'}`, size:20})] });
-
-  const tableRows = [new TableRow({ children:[
-    new TableCell({ children:[new Paragraph({children:[new TextRun({text:"#", bold:true})]})] }),
-    new TableCell({ children:[new Paragraph({children:[new TextRun({text:"Asset Name", bold:true})]})] })
-  ]})];
-
-  rows.forEach(tr => {
-    const tds = tr.querySelectorAll('td');
-    tableRows.push(new TableRow({ children:[
-      new TableCell({ children:[ new Paragraph(tds[0]?.textContent.trim() || '') ] }),
-      new TableCell({ children:[ new Paragraph(tds[1]?.textContent.trim() || '') ] })
-    ]}));
-  });
-
-  const dataTable = new Table({ width:{size:100,type:WidthType.PERCENTAGE}, rows: tableRows });
-  const footerPara = new Paragraph({ spacing:{before:200}, children:[new TextRun({text:`Print date: ${new Date().toLocaleDateString()}`, size:20})]});
-
-  const doc = new Document({ sections:[{ children:[headerTable,titlePara,filterPara,dataTable,footerPara] }] });
-  const blobFile = await Packer.toBlob(doc);
-  const a = document.createElement("a");
-  a.href = URL.createObjectURL(blobFile);
-  a.download = "BARMA-ReservedAssets-Report.docx";
-  a.click();
-  URL.revokeObjectURL(a.href);
-}
-
-// ---------------------- PDF Export -------------------------
-async function exportFilteredToPDF() {
-  const tableClone = document.getElementById('reservationTable').cloneNode(true);
-  const tbody = tableClone.querySelector('tbody');
-
-  // ✅ Fixed: filter out hidden rows correctly
-  const rows = Array.from(tbody.rows);
-  rows.forEach(row => {
-    if (row.style.display === 'none') tbody.removeChild(row);
-  });
-
-  if (!tbody.rows.length) return alert('No visible records to export.');
-
-  tableClone.style.borderCollapse = 'collapse';
-  tableClone.querySelectorAll('th, td').forEach(cell=>{
-    cell.style.border='0.5px solid black';
-    cell.style.color='black';
-    cell.style.padding='4px';
-    cell.style.textAlign='center';
-    cell.style.fontSize='12px';
-  });
-  tableClone.querySelectorAll('th').forEach(cell=>cell.style.fontWeight='bold');
-
-  const container = document.createElement('div');
-  container.innerHTML = await buildExportHeader() + buildReportTitle();
-  container.appendChild(tableClone);
-  const footer = document.createElement('div'); footer.innerHTML = buildExportFooter(); container.appendChild(footer);
-
-  html2pdf().from(container).set({ margin:[0.5,0.5,0.5,0.5], filename:'BARMA-ReservedAssets-Report.pdf', image:{type:'jpeg', quality:1}, html2canvas:{scale:2}, jsPDF:{unit:'in',format:'letter',orientation:'portrait'}}).save();
-}
-
-// ---------------------- Print -------------------------
-async function printReport() {
-  const header = await buildExportHeader();
-  const footer = buildExportFooter();
-  const tableHTML = document.getElementById('reservationTable').outerHTML;
-  const style = `<style> body{font-family:Arial,sans-serif; padding:20px; color:#000;} table{width:100%; border-collapse:collapse;} th,td{border:0.5px solid black; padding:4px; text-align:center; font-size:12px;} th{font-weight:bold;} </style>`;
-  const win = window.open('', '', 'width=800,height=600');
-  win.document.write(`<html><head><title>Print</title>${style}</head><body>${header}${buildReportTitle()}${tableHTML}${footer}</body></html>`);
-  win.document.close();
-  win.onload = ()=>{ win.focus(); win.print(); };
-}
-
 document.getElementById('searchInput').addEventListener('input', filterTable);
+
+// PDF / Print Helpers (unchanged)
+async function toBase64(url) { const res = await fetch(url,{cache:"no-store"}); const blob = await res.blob(); return new Promise(resolve=>{ const reader=new FileReader(); reader.onloadend=()=>resolve(reader.result); reader.readAsDataURL(blob); }); }
+async function buildExportHeader(){const pob5Logo=await toBase64("{{ url_for('static', filename='img/POB5.jpg') }}"); const barmaLogo=await toBase64("{{ url_for('static', filename='img/logo3.png') }}"); return `<div style="position: relative; text-align: center; margin-bottom: 8px; height: 100px;"><img src="${pob5Logo}" style="position: absolute; left: 0; top: 40%; transform: translateY(-50%); height: 60px;" /><img src="${barmaLogo}" style="position: absolute; right: 0; top: 40%; transform: translateY(-50%); height: 100px;" /><div style="position: relative; z-index: 1;"><div style="font-weight:700; font-size:18px;">POBLACION 5</div><div style="font-size:12px;">Poblacion 5, Midsayap, Cotabato</div><div style="font-size:11px; margin-top:2px;">BARMA</div><div style="margin:6px auto 0; width: 75%; border-top:1px solid #000;"></div></div></div>`; }
+function buildReportTitle(){ const search=document.getElementById('searchInput').value||'All'; return `<div style="text-align:center; margin:12px 0;"><div style="font-weight:700; font-size:14px;">RESERVATION ASSETS REPORT</div><div style="font-size:12px;">Search Filter: ${search}</div></div>`;}
+function buildExportFooter(){const today=new Date().toLocaleDateString(); return `<div style="font-size:12px; margin-top:8px; display:flex; justify-content: space-between;"><span>Print date: ${today}</span><span>Printed by: ${adminName}</span></div>`;}
+async function exportFilteredToPDF(){ const tableClone=document.getElementById('reservationTable').cloneNode(true); const tbody=tableClone.querySelector('tbody'); Array.from(tbody.rows).forEach(row=>{if(row.style.display==='none')tbody.removeChild(row);}); if(!tbody.rows.length) return alert('No visible records to export.'); tableClone.style.borderCollapse='collapse'; tableClone.querySelectorAll('th,td').forEach(cell=>{cell.style.border='0.5px solid black';cell.style.padding='4px';cell.style.textAlign='center';cell.style.fontSize='12px';}); tableClone.querySelectorAll('th').forEach(cell=>cell.style.fontWeight='bold'); const container=document.createElement('div'); container.innerHTML=await buildExportHeader()+buildReportTitle(); container.appendChild(tableClone); const footer=document.createElement('div'); footer.innerHTML=buildExportFooter(); container.appendChild(footer); html2pdf().from(container).set({margin:[0.5,0.5,0.5,0.5], filename:'BARMA-ReservedAssets-Report.pdf', image:{type:'jpeg',quality:1}, html2canvas:{scale:2}, jsPDF:{unit:'in',format:'letter',orientation:'portrait'}}).save(); }
+async function printReport(){ const header=await buildExportHeader(); const footer=buildExportFooter(); const tableHTML=document.getElementById('reservationTable').outerHTML; const style=`<style>body{font-family:Arial,sans-serif; padding:20px; color:#000;} table{width:100%; border-collapse:collapse;} th,td{border:0.5px solid black; padding:4px; text-align:center; font-size:12px;} th{font-weight:bold;} .footer{display:flex; justify-content:space-between; font-size:12px; margin-top:8px;}</style>`; const win=window.open('','','width=800,height=600'); win.document.write(`<html><head><title>Print</title>${style}</head><body>${header}${buildReportTitle()}${tableHTML}${footer}</body></html>`); win.document.close(); win.onload=()=>{win.focus(); win.print();}; }
+
+// FullCalendar
+document.addEventListener('DOMContentLoaded', function() {
+  const calendarEl = document.getElementById('calendar');
+  let calendar = new FullCalendar.Calendar(calendarEl, {
+    initialView: 'dayGridMonth',
+    headerToolbar: { left:'prev,next today', center:'title', right:'dayGridMonth,timeGridWeek,timeGridDay,listWeek' },
+    height: 'auto',
+    events: '/api/reservation-events',
+    eventDidMount: function(info) {
+        const { resident_name, purpose, remarks } = info.event.extendedProps;
+        const start = info.event.start.toLocaleString();
+        const end = info.event.end ? info.event.end.toLocaleString() : '';
+        info.el.setAttribute('title', 
+            `Asset: ${info.event.title}\nResident: ${resident_name}\nPurpose: ${purpose}\nRemarks: ${remarks}\nStart: ${start}\nEnd: ${end}`
+        );
+    },
+    eventClick: function(info) {
+        const { resident_name, purpose, remarks } = info.event.extendedProps;
+        const start = info.event.start.toLocaleString();
+        const end = info.event.end ? info.event.end.toLocaleString() : '';
+
+        // Double-click detection
+        if (info.el.getAttribute('data-clicked') === 'true') {
+            info.el.removeAttribute('data-clicked');
+            // Go to the day view of the clicked date
+            calendar.changeView('timeGridDay', info.event.start);
+        } else {
+            info.el.setAttribute('data-clicked', 'true');
+            setTimeout(() => {
+                if (info.el.getAttribute('data-clicked') === 'true') {
+                    // Single click action (alert)
+                    alert(
+                        `Asset: ${info.event.title}\nResident: ${resident_name}\nPurpose: ${purpose}\nRemarks: ${remarks}\nStart: ${start}\nEnd: ${end}`
+                    );
+                }
+                info.el.removeAttribute('data-clicked');
+            }, 300); // 300ms window for double click
+        }
+    }
+  });
+
+  const calendarModal = document.getElementById('calendarModal');
+  calendarModal.addEventListener('shown.bs.modal', () => {
+    calendar.render();
+    calendar.updateSize();
+  });
+
+  const facilityFilter = document.getElementById('facilityFilter');
+  facilityFilter.addEventListener('change', async function() {
+    const val = this.value;
+    const response = await fetch('/api/reservation-events');
+    let events = await response.json();
+    if(val !== 'all') events = events.filter(e => e.title === val);
+    calendar.removeAllEvents();
+    events.forEach(e => calendar.addEvent(e));
+  });
+});
 </script>
 
 </body>

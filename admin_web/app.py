@@ -4,27 +4,85 @@ from flask_sqlalchemy import SQLAlchemy
 from sqlalchemy import and_
 import pymysql
 import threading
-from datetime import datetime, date, timedelta
-import time 
+from datetime import datetime, date, timedelta, time
 from werkzeug.security import generate_password_hash, check_password_hash
 import re
 from werkzeug.utils import secure_filename
 import requests
 from apscheduler.schedulers.background import BackgroundScheduler
+from functools import wraps
 
 
 # Required for PyMySQL to work with SQLAlchemy
 pymysql.install_as_MySQLdb()
 
 app = Flask(__name__)
-app.secret_key = 'secret_key_barma'
+app.secret_key = os.environ.get('SECRET_KEY', 'dev-secret')
 
 # Admin credentials
 ADMIN_USERNAME = 'admin'
 ADMIN_PASSWORD = 'admin123'
 
+VERIFICATION_CODE = "SECRET2025"  # hardcoded code
+
+@app.route("/verify_code", methods=["GET", "POST"])
+def verify_code():
+    if request.method == "POST":
+        code = request.form["code"]
+        if code == VERIFICATION_CODE:
+            session["verified"] = True
+            return redirect(url_for("create_admin"))
+        else:
+            flash("Invalid verification code!")
+    return render_template("verify_code.html")
+
+@app.route("/create_admin", methods=["GET", "POST"])
+def create_admin():
+    if not session.get("verified"):
+        return redirect(url_for("verify_code"))
+
+    if request.method == "POST":
+        full_name = request.form.get("full_name", "").strip()
+        position = request.form.get("position", "").strip()
+        username = request.form.get("username", "").strip()
+        password = request.form.get("password", "")
+        confirm_password = request.form.get("confirm_password", "")
+
+        # Check password match
+        if not password or password != confirm_password:
+            return render_template("create_admin.html", error="Passwords do not match!")
+
+        # Check if username already exists
+        existing_user = Admin.query.filter_by(username=username).first()
+        if existing_user:
+            return render_template("create_admin.html", error="Username already taken!")
+
+        # Create new admin
+        new_admin = Admin(full_name=full_name, position=position, username=username)
+        new_admin.set_password(password)  # hash password
+
+        db.session.add(new_admin)
+        db.session.commit()
+
+        # Log in the admin immediately
+        session['admin_id'] = new_admin.id
+        session['admin'] = True
+        session.pop("verified", None)  # reset verification
+
+        # Redirect to dashboard (or assets page)
+        return redirect(url_for("dashboard"))
+
+    # GET request just renders the form
+    return render_template("create_admin.html")
+
+
+
+
 # SQLAlchemy + PyMySQL connection
-app.config['SQLALCHEMY_DATABASE_URI'] = 'mysql+pymysql://root:@localhost:3306/barma'
+app.config['SQLALCHEMY_DATABASE_URI'] = os.environ.get(
+    'DATABASE_URL',
+    'mysql+pymysql://root:@localhost:3306/barma'
+)
 
 app.config['SQLALCHEMY_ENGINE_OPTIONS'] = {
     'pool_pre_ping': True
@@ -45,8 +103,8 @@ os.makedirs(ID_UPLOAD_FOLDER, exist_ok=True)
 os.makedirs(SELFIE_UPLOAD_FOLDER, exist_ok=True)
 
 
-TEXTBEE_API_KEY = "9bfcb997-3072-45e5-99ad-0f05fe323b23"
-TEXTBEE_DEVICE_ID = "68a6a678331241e70a37bf79"
+TEXTBEE_API_KEY = os.environ.get('TEXTBEE_API_KEY')
+TEXTBEE_DEVICE_ID = os.environ.get('TEXTBEE_DEVICE_ID')
 TEXTBEE_API_URL = f"https://api.textbee.dev/api/v1/gateway/devices/{TEXTBEE_DEVICE_ID}/send-sms"
 
 def send_sms(phone_number, message):
@@ -75,6 +133,14 @@ def send_sms(phone_number, message):
     except Exception as e:
         print(f"[SMS ERROR] {e}")
 
+def admin_required(f):
+    @wraps(f)
+    def decorated_function(*args, **kwargs):
+        admin_id = session.get('admin_id')
+        if not admin_id or not Admin.query.get(admin_id):
+            return redirect(url_for('login'))
+        return f(*args, **kwargs)
+    return decorated_function
 
 def send_return_reminders():
     tomorrow = datetime.utcnow().date() + timedelta(days=1)
@@ -91,6 +157,21 @@ scheduler.start()
 def allowed_file(filename):
     return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
 
+
+class Admin(db.Model):
+    __tablename__ = "admins"
+
+    id = db.Column(db.Integer, primary_key=True)
+    full_name = db.Column(db.String(150), nullable=False)
+    position = db.Column(db.String(100), nullable=False)
+    username = db.Column(db.String(80), unique=True, nullable=False)
+    password_hash = db.Column(db.String(200), nullable=False)
+
+    def set_password(self, password):
+        self.password_hash = generate_password_hash(password)
+
+    def check_password(self, password):
+        return check_password_hash(self.password_hash, password)
 
 class Resident(db.Model):
     __tablename__ = 'residents'
@@ -124,16 +205,19 @@ class Asset(db.Model):
     reservations = db.relationship('Reservation', backref='asset', lazy=True)
 
 
+
 class Reservation(db.Model):
     __tablename__ = 'reservations'
     id = db.Column(db.Integer, primary_key=True)
     resident_name = db.Column(db.String(255), nullable=False)
     item = db.Column(db.String(255), nullable=False)
     purpose = db.Column(db.String(255), nullable=True)
-    request_date = db.Column(db.Date, nullable=False)
+    reservation_start = db.Column(db.DateTime, nullable=False)
+    reservation_end = db.Column(db.DateTime, nullable=False)
     status = db.Column(db.Enum('Pending', 'Approved', 'Rejected'), default='Pending')
-    
-    asset_id = db.Column(db.Integer, db.ForeignKey('assets.id'), nullable=False)  # ✅ Add this
+    rejection_reason = db.Column(db.String(255), nullable=True)
+    asset_id = db.Column(db.Integer, db.ForeignKey('assets.id'), nullable=False)
+
 
 
 class Borrowing(db.Model):
@@ -145,8 +229,9 @@ class Borrowing(db.Model):
     purpose = db.Column(db.String(255), nullable=True)
     request_date = db.Column(db.Date, nullable=False)
     return_date = db.Column(db.Date, nullable=False)
+    due_date = db.Column(db.Date)
     status = db.Column(db.Enum('Pending', 'Approved', 'Rejected', 'Returned', 'Return Requested'), default='Pending')
-
+    rejection_reason = db.Column(db.String(255), nullable=True)
     
     asset_id = db.Column(db.Integer, db.ForeignKey('assets.id'), nullable=False)  # ✅ Add this
 
@@ -195,13 +280,20 @@ def login():
     if request.method == 'POST':
         username = request.form['username']
         password = request.form['password']
-        if username == ADMIN_USERNAME and password == ADMIN_PASSWORD:
-            session['admin'] = True
-            restrict_overdue_accounts()
+
+        # Look for user in database
+        user = Admin.query.filter_by(username=username).first()
+
+        if user and check_password_hash(user.password_hash, password):
+            session['admin_id'] = user.id   # <-- add this
+            session['admin'] = True          # optional, keep for other checks
+            restrict_overdue_accounts()      # your existing function
             return redirect(url_for('dashboard'))
         else:
             return render_template('login.html', error='Invalid credentials')
+
     return render_template('login.html')
+
 
 
 @app.route('/dashboard')
@@ -210,8 +302,9 @@ def dashboard():
         return redirect(url_for('login'))
 
     assets = Asset.query.all()
-    reservations = Reservation.query.order_by(Reservation.request_date.desc()).all()
+    reservations = Reservation.query.order_by(Reservation.reservation_start.desc()).all()
     borrowings = Borrowing.query.order_by(Borrowing.request_date.desc()).all()
+
     print("[DEBUG] Borrowings sent to dashboard:")
     for b in borrowings:
         print(f"{b.id} - {b.item} - {b.status}")
@@ -231,15 +324,23 @@ def add_asset():
     if not session.get('admin'):
         return redirect(url_for('login'))
 
-    name = request.form['name']
+    name = request.form['name'].strip()
     quantity = int(request.form['quantity'])
-    classification = request.form['classification']  # NEW: Get classification from form
+    classification = request.form['classification']
 
-    asset = Asset(name=name, quantity=quantity, classification=classification)  # NEW: Pass classification
+    # 🔍 Check if an asset with the same name already exists
+    existing_asset = Asset.query.filter_by(name=name).first()
+    if existing_asset:
+        flash("Asset with this name already exists!", "danger")
+        return redirect(url_for('assets_page'))
+
+    # ✅ If no duplicate, proceed to add
+    asset = Asset(name=name, quantity=quantity, classification=classification)
     db.session.add(asset)
     db.session.commit()
 
-    return redirect(url_for('assets_page'))  # redirect to assets page
+    flash("Asset added successfully!", "success")
+    return redirect(url_for('assets_page'))
 
 
 @app.route('/edit_asset/<int:id>', methods=['GET', 'POST'])
@@ -252,7 +353,7 @@ def edit_asset(id):
         asset.name = request.form['name']
         asset.quantity = int(request.form['quantity'])
         db.session.commit()
-        return redirect(url_for('dashboard'))
+        return redirect(url_for('assets_page'))
 
     return render_template('edit_asset.html', asset=asset)
 
@@ -264,7 +365,7 @@ def delete_asset(id):
     asset = Asset.query.get_or_404(id)
     db.session.delete(asset)
     db.session.commit()
-    return redirect(url_for('dashboard'))
+    return redirect(url_for('assets_page'))
 
 @app.route('/add_reservation', methods=['POST'])
 def add_reservation():
@@ -319,29 +420,35 @@ def approve_reservation(id):
 
 
 
-@app.route('/reject_reservation/<int:id>')
+@app.route('/reject_reservation/<int:id>', methods=['POST'])
 def reject_reservation(id):
     if not session.get('admin'):
         return redirect(url_for('login'))
 
     reservation = Reservation.query.get_or_404(id)
+    reason = request.form.get('reason')   # ✅ get reason from form
     reservation.status = 'Rejected'
+    reservation.rejection_reason = reason
 
+    # Add to history
     history = History(
         type='Reservation',
         resident_name=reservation.resident_name,
         item=reservation.item,
         purpose=reservation.purpose,
-        action_type='Rejected'
+        action_type=f"Rejected ({reason})"  # ✅ include reason
     )
 
     db.session.add(history)
     db.session.commit()
-    # After db.session.commit()
+
+    # ✅ Send SMS with reason
     resident = Resident.query.filter_by(full_name=reservation.resident_name).first()
     if resident:
-        send_sms(resident.phone_number,
-                f"Hi {resident.full_name}, your reservation for {reservation.item} has been REJECTED.")
+        send_sms(
+            resident.phone_number,
+            f"Hi! {resident.full_name}, your reservation for {reservation.item} has been REJECTED. Reason: {reason}"
+        )
 
     return redirect(url_for('dashboard'))
 
@@ -387,19 +494,21 @@ def approve_borrowing(id):
     if resident:
         send_sms(
             resident.phone_number,
-            f"Hi {resident.full_name}, your borrowing request for {borrowing.item} ({borrowing.quantity}) has been APPROVED. Please return it by {borrowing.return_date}."
+            f"Hi {resident.full_name}, your borrowing request for {borrowing.item} ({borrowing.quantity}) has been APPROVED. You may now claim the item(s) at the Barangay Hall. Kindly ensure that the asset is returned on or before {borrowing.return_date} to avoid."
         )
 
     return redirect(url_for('dashboard'))
 
 
-@app.route('/reject_borrowing/<int:id>')
+@app.route('/reject_borrowing/<int:id>', methods=['POST'])
 def reject_borrowing(id):
     if not session.get('admin'):
         return redirect(url_for('login'))
 
     borrowing = Borrowing.query.get_or_404(id)
+    reason = request.form.get('reason')   # ✅ get reason from form
     borrowing.status = 'Rejected'
+    borrowing.rejection_reason = reason
 
     # Add to history
     history = History(
@@ -408,17 +517,18 @@ def reject_borrowing(id):
         item=borrowing.item,
         quantity=borrowing.quantity,
         purpose=borrowing.purpose,
-        action_type='Rejected'
+        action_type=f"Rejected ({reason})"  # ✅ include reason
     )
+
     db.session.add(history)
     db.session.commit()
 
-    # ✅ Send SMS notification
+    # ✅ Send SMS with reason
     resident = Resident.query.filter_by(full_name=borrowing.resident_name).first()
     if resident:
         send_sms(
             resident.phone_number,
-            f"Hi {resident.full_name}, your borrowing request for {borrowing.item} ({borrowing.quantity}) has been REJECTED."
+            f"Hi! {resident.full_name}, your borrowing request for {borrowing.item} ({borrowing.quantity}) has been REJECTED. Reason: {reason}"
         )
 
     return redirect(url_for('dashboard'))
@@ -431,29 +541,44 @@ def history_page():
 
     history_logs = History.query.order_by(History.action_date.desc()).all()
 
-    return render_template('history.html', history_logs=history_logs)
+    # fetch the admin from the same session id
+    admin = Admin.query.get(session['admin_id'])
+    return render_template(
+        'history.html',
+        history_logs=history_logs,
+        username=admin.full_name  # pass the same full name
+    )
+
+
 
 @app.route('/return_borrowing/<int:borrowing_id>', methods=['POST'])
-def return_borrowing(borrowing_id):
+def return_borrowing(borrowing_id): 
     borrowing = Borrowing.query.get_or_404(borrowing_id)
-
-    if borrowing.status.lower() == "approved":
+    
+    if borrowing.status.lower() == "approved": 
         borrowing.status = "Returned"
-        db.session.commit()
+        db.session.commit() 
         flash('Item marked as returned.', 'success')
-    else:
-        flash('Only approved borrowings can be returned.', 'info')
-
+    else: 
+        flash('Only approved borrowings can be returned.', 'info') 
+    
+    
     return redirect(url_for('manage_borrowing'))
 
 
 
 @app.route('/assets')
+@admin_required
 def assets_page():
-    if not session.get('admin'):
-        return redirect(url_for('login'))
+    admin = Admin.query.get(session['admin_id'])
     assets = Asset.query.all()
-    return render_template('assets.html', assets=assets)
+    return render_template('assets.html', assets=assets, admin_name=admin.full_name)
+
+@app.route('/help')
+def help_page():
+    return render_template('help.html', admin_name=session.get('admin_name', 'Admin'))
+
+
 
 @app.route('/api/register', methods=['POST'])
 def register_resident():
@@ -659,19 +784,44 @@ def borrow_asset():
 def reserve_asset():
     data = request.get_json()
     try:
+        asset_id = data['asset_id']
+        reservation_start = datetime.strptime(data['reservation_start'], '%Y-%m-%d %H:%M')
+        reservation_end = datetime.strptime(data['reservation_end'], '%Y-%m-%d %H:%M')
+
+        # ✅ STRICT BLOCKING OVERLAP CHECK
+        overlap = Reservation.query.filter(
+            Reservation.asset_id == asset_id,
+            Reservation.status.in_(["Pending", "Approved"]),
+            Reservation.reservation_start < reservation_end,   # existing starts before new ends
+            Reservation.reservation_end > reservation_start    # existing ends after new starts
+        ).first()
+
+        if overlap:
+            return jsonify({
+                'error': f'This time slot is already booked from '
+                         f'{overlap.reservation_start.strftime("%I:%M %p")} '
+                         f'to {overlap.reservation_end.strftime("%I:%M %p")}'
+            }), 400
+
+        # Create reservation
         new_reservation = Reservation(
-            asset_id=data['asset_id'],
+            asset_id=asset_id,
             resident_name=data['resident_name'],
-            item=data['item'],  # ✅ FIX: Include item here
+            item=data['item'],
             purpose=data['purpose'],
             status='Pending',
-            request_date=datetime.strptime(data['reservation_date'], '%Y-%m-%d')
+            reservation_start=reservation_start,
+            reservation_end=reservation_end
         )
         db.session.add(new_reservation)
         db.session.commit()
         return jsonify({'message': 'Reservation request submitted successfully'}), 200
+
     except Exception as e:
+        db.session.rollback()
         return jsonify({'error': str(e)}), 400
+
+
 
 
 @app.route('/api/reserved-dates/<int:asset_id>')
@@ -679,10 +829,16 @@ def get_reserved_dates(asset_id):
     reservations = Reservation.query.filter_by(asset_id=asset_id).filter(
         Reservation.status.in_(['Pending', 'Approved'])
     ).all()
-    
-    reserved_dates = [r.request_date.strftime('%Y-%m-%d') for r in reservations]
-    return jsonify(reserved_dates)
 
+    fully_booked_dates = set()
+    for r in reservations:
+        res_start = r.reservation_start.time()
+        res_end = r.reservation_end.time()
+        # compare against datetime.time objects
+        if res_start <= time(18, 0) and res_end >= time(7, 0):
+            fully_booked_dates.add(r.reservation_start.date().isoformat())
+
+    return jsonify(list(fully_booked_dates))
 
 @app.route('/api/debug_assets')
 def debug_assets():
@@ -828,67 +984,58 @@ def get_pending_borrowings(resident_name):
 
 @app.route('/api/pending-reservations/<string:resident_name>', methods=['GET'])
 def get_pending_reservations(resident_name):
-    today = datetime.today().date()
-    reservations = Reservation.query.filter_by(resident_name=resident_name, status='Pending').filter(
-        Reservation.request_date >= today
-    ).order_by(Reservation.request_date.asc()).all()
+    today = datetime.now()  # include time for DateTime comparison
+    reservations = Reservation.query.filter_by(
+        resident_name=resident_name, 
+        status='Pending'
+    ).filter(
+        Reservation.reservation_start >= today
+    ).order_by(
+        Reservation.reservation_start.asc()
+    ).all()
 
     result = []
     for r in reservations:
         result.append({
             'id': r.id,
             'purpose': r.purpose,
-            'date': r.request_date.strftime('%Y-%m-%d'),
+            'start': r.reservation_start.strftime('%Y-%m-%d %H:%M'),
+            'end': r.reservation_end.strftime('%Y-%m-%d %H:%M'),
             'status': r.status
         })
     return jsonify(result)
 
 
-
 @app.route('/reservations')
+@admin_required
 def reservations_page():
-    if not session.get('admin'):
-        return redirect(url_for('login'))
-
-    # Get all assets classified as 'Reservation'
+    admin = Admin.query.get(session['admin_id'])
     reservable_assets = Asset.query.filter_by(classification='Reservation').all()
+    return render_template('reservation.html', reservable_assets=reservable_assets, admin_name=admin.full_name)
 
-    # Get active reservation records
-    active_reservations = Reservation.query.filter(
-        Reservation.status.in_(['Pending', 'Approved'])
-    ).all()
 
-    # Extract asset names that are actually reserved
-    reserved_items = list(set(asset.name for asset in reservable_assets))
-
-    return render_template(
-        'reservation.html',
-        reservable_assets=reservable_assets,
-        reserved_items=reserved_items
-    )
 
 
 @app.route('/api/reservation-events')
 def reservation_events():
-    reservations = Reservation.query.filter(
-        Reservation.status.in_(['Pending', 'Approved'])
-    ).all()
+    reservations = Reservation.query.filter_by(status='Approved').all()
 
     events = []
     for r in reservations:
         events.append({
             "title": r.item,  # Displayed on calendar
-            "start": r.request_date.strftime('%Y-%m-%d'),
-            "color": "#0d6efd" if r.status == 'Approved' else "#ffc107",
+            "start": r.reservation_start.isoformat(),
+            "end": r.reservation_end.isoformat(),
+            "color": "#FFC100",
             "extendedProps": {
-                "status": r.status,
                 "resident_name": r.resident_name,
-                "purpose": r.purpose,  # ✅ Add this line
-                "remarks": getattr(r, 'remarks', '')  # Optional
+                "purpose": r.purpose,
+                "remarks": getattr(r, 'remarks', '')
             }
         })
 
     return jsonify(events)
+
 
 
 @app.route('/update_asset/<int:id>', methods=['POST'])
@@ -896,16 +1043,38 @@ def update_asset(id):
     if not session.get('admin'):
         return redirect(url_for('login'))
 
+    # Read form values
+    name = request.form['name'].strip()
+    quantity = int(request.form['quantity'])
+    classification = request.form['classification']
+
+    # Get current asset
     asset = Asset.query.get_or_404(id)
-    asset.name = request.form['name']
-    asset.quantity = int(request.form['quantity'])
-    asset.classification = request.form['classification']
+
+    # ✅ Check if new name already exists on another asset
+    duplicate = Asset.query.filter(
+        Asset.name == name,
+        Asset.id != id  # exclude the same asset from the check
+    ).first()
+
+    if duplicate:
+        flash('Asset name already exists. Please use a different name.', 'danger')
+        return redirect(url_for('assets_page'))
+
+    # ✅ If no duplicate, update normally
+    asset.name = name
+    asset.quantity = quantity
+    asset.classification = classification
     db.session.commit()
 
+    flash('Asset updated successfully!', 'success')
     return redirect(url_for('assets_page'))
 
+
 @app.route('/borrowings')
+@admin_required
 def borrowings_page():
+    admin = Admin.query.get(session['admin_id'])
     borrowing_assets = Asset.query.filter_by(classification='Borrowing').all()
     asset_data = []
 
@@ -918,7 +1087,7 @@ def borrowings_page():
 
         available_quantity = quantity - approved_borrowed
         if available_quantity < 0:
-            available_quantity = 0  # prevent negative
+            available_quantity = 0
 
         asset_data.append({
             'id': asset.id,
@@ -926,7 +1095,8 @@ def borrowings_page():
             'available_quantity': available_quantity
         })
 
-    return render_template('borrowings.html', borrowing_assets=asset_data)
+    return render_template('borrowings.html', borrowing_assets=asset_data, admin_name=admin.full_name)
+
 
 
 
@@ -960,12 +1130,29 @@ def get_user_id_by_name(name):
 
 @app.route('/admin/approve-return/<int:borrow_id>', methods=['POST'])
 def approve_return(borrow_id):
+    if not session.get('admin'):
+        return redirect(url_for('login'))
+
     borrowing = Borrowing.query.get_or_404(borrow_id)
 
     if borrowing.status == 'Return Requested':
+        # ✅ Update borrowing status
         borrowing.status = 'Returned'
-        # Optional: borrowing.returned_on = datetime.utcnow()
-        db.session.commit()
+
+        # ✅ Add to History (like in reject route)
+        history = History(
+            type='Borrowing',
+            resident_name=borrowing.resident_name,
+            item=borrowing.item,
+            quantity=borrowing.quantity,
+            purpose=borrowing.purpose,
+            action_type='Returned'  # you can customize message here too
+            # action_date=datetime.utcnow()  # optional if your model has default
+        )
+
+        db.session.add(history)
+        db.session.commit()  # commit both status + history
+
         flash('Return approved successfully.', 'success')
 
         # ✅ Send SMS notification
@@ -973,9 +1160,9 @@ def approve_return(borrow_id):
         if resident and resident.phone_number:
             send_sms(
                 resident.phone_number,
-                f"Hi {resident.full_name}, your return request for {borrowing.item} has been APPROVED. Thank you!"
+                f"Hi {resident.full_name}, your return request for "
+                f"{borrowing.item} ({borrowing.quantity}) has been APPROVED. Thank you!"
             )
-
     else:
         flash('Cannot approve return. Status must be "Return Requested".', 'warning')
 
@@ -1059,22 +1246,49 @@ def get_resident_history(full_name):
 def run_daily_restriction():
     while True:
         now = datetime.now()
-        next_run = datetime.combine(now.date(), datetime.min.time())  # midnight
-        next_run = next_run.replace(hour=1)  # run at 1 AM
+        # Set base run time today at 1AM
+        next_run = datetime.combine(now.date(), datetime.min.time()).replace(hour=1)
 
-        # If it's already past 1AM today, run tomorrow
+        # If it's already past 1AM today, schedule for tomorrow 1AM
         if now >= next_run:
-            next_run = next_run.replace(day=now.day + 1)
+            next_run = next_run + timedelta(days=1)
 
         wait_seconds = (next_run - now).total_seconds()
         print(f"[SCHEDULER] Restriction check will run in {int(wait_seconds)} seconds.")
 
         time.sleep(wait_seconds)
-        restrict_overdue_accounts()  # ✅ call the function
+        restrict_overdue_accounts()  # ✅ call your function
 
-# Run in background thread
-threading.Thread(target=run_daily_restriction, daemon=True).start()
 
+@app.route('/api/reservations/<int:reservation_id>/status', methods=['PUT'])
+def update_reservation_status(reservation_id):
+    data = request.get_json()
+    try:
+        reservation = Reservation.query.get_or_404(reservation_id)
+
+        if 'status' not in data:
+            return jsonify({'error': 'Status is required'}), 400
+
+        old_status = reservation.status
+        reservation.status = data['status']
+        db.session.commit()
+
+        # Send SMS to the resident after status update
+        phone_number = reservation.user.phone_number  # Adjust if phone is in another table/field
+        if reservation.status == "Approved":
+            message = f"Your reservation for {reservation.purpose} on {reservation.reservation_start.strftime('%Y-%m-%d %H:%M')} has been APPROVED."
+        elif reservation.status == "Rejected":
+            message = f"Your reservation for {reservation.purpose} on {reservation.reservation_start.strftime('%Y-%m-%d %H:%M')} has been REJECTED."
+        else:
+            message = f"Your reservation status has been updated to {reservation.status}."
+
+        send_sms(phone_number, message)
+
+        return jsonify({'message': f"Reservation {reservation.status.lower()} and SMS sent"}), 200
+
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'error': str(e)}), 400
 
 @app.route('/api/reservations/<int:reservation_id>', methods=['PUT'])
 def update_reservation(reservation_id):
@@ -1082,35 +1296,49 @@ def update_reservation(reservation_id):
     try:
         reservation = Reservation.query.get_or_404(reservation_id)
 
-        # Extract new request_date if provided
-        new_date = None
-        if 'request_date' in data:
-            new_date = datetime.strptime(data['request_date'], '%Y-%m-%d').date()
+        if 'reservation_start' in data:
+            new_start = datetime.strptime(data['reservation_start'], '%Y-%m-%d %H:%M')
 
-            # Check if another reservation already exists with the same date
-            conflict = Reservation.query.filter(
-                Reservation.id != reservation_id,  # exclude current one
-                Reservation.request_date == new_date,
-                Reservation.status.in_(["Approved", "Pending"])  # exclude cancelled/denied
-            ).first()
+            # find conflicts
+            conflicts = Reservation.query.filter(
+                Reservation.id != reservation_id,
+                Reservation.reservation_start == new_start,
+                Reservation.status.in_(["Approved", "Pending"])
+            ).all()
 
-            if conflict:
-                return jsonify({'error': 'This date is already reserved.'}), 400
+            if conflicts:
+                return jsonify({
+                    'error': 'This time slot is already reserved.',
+                    'conflicts': [
+                        {
+                            'id': c.id,
+                            'start': c.reservation_start.strftime('%Y-%m-%d %H:%M'),
+                            'end': c.reservation_end.strftime('%Y-%m-%d %H:%M'),
+                            'status': c.status,
+                            'purpose': c.purpose
+                        }
+                        for c in conflicts
+                    ]
+                }), 400
 
-            reservation.request_date = new_date
+            reservation.reservation_start = new_start
 
-        # Update other fields
+        if 'reservation_end' in data:
+            new_end = datetime.strptime(data['reservation_end'], '%Y-%m-%d %H:%M')
+            reservation.reservation_end = new_end
+
         if 'purpose' in data:
             reservation.purpose = data['purpose']
 
-        # Reset status to Pending after edit
         reservation.status = 'Pending'
-
         db.session.commit()
         return jsonify({'message': 'Reservation updated and sent for approval'}), 200
+
     except Exception as e:
         db.session.rollback()
         return jsonify({'error': str(e)}), 400
+
+
 
 
 @app.route('/api/reservations/<resident_name>', methods=['GET'])
@@ -1124,9 +1352,10 @@ def get_user_reservations(resident_name):
             'id': r.id,
             'purpose': r.purpose,
             'status': r.status,
-            'date': r.request_date.strftime('%Y-%m-%d'),
-            'time': getattr(r, 'time', 'N/A')
+            'reservation_start': r.reservation_start.isoformat(),
+            'reservation_end': r.reservation_end.isoformat()
         })
+
     return jsonify(result)
 
 
@@ -1141,9 +1370,10 @@ def get_user_pending_reservations(resident_name):
             'id': r.id,
             'purpose': r.purpose,
             'status': r.status,
-            'date': r.request_date.strftime('%Y-%m-%d'),
-            'time': getattr(r, 'time', 'N/A')
+            'reservation_start': r.reservation_start.isoformat(),
+            'reservation_end': r.reservation_end.isoformat()
         })
+
     return jsonify(result)
 
 
@@ -1156,14 +1386,15 @@ def dashboard_data():
     borrowings_pending = Borrowing.query.filter_by(status="Pending").count()
 
     # Pending reservations
-    reservations = Reservation.query.filter_by(status="Pending").order_by(Reservation.request_date.desc()).all()
+    reservations = Reservation.query.filter_by(status="Pending").order_by(Reservation.reservation_start.desc()).all()
     reservations_data = [{
         "id": r.id,
         "type": "Reservation",
         "resident_name": r.resident_name,
         "item": r.item,
         "purpose": r.purpose,
-        "request_date": r.request_date.strftime('%Y-%m-%d'),
+        "reservation_start": r.reservation_start.isoformat(),  # <-- send full ISO string
+        "reservation_end": r.reservation_end.isoformat(),  
         "status": r.status
     } for r in reservations]
 
@@ -1205,7 +1436,73 @@ def dashboard_data():
         "active_borrowings": active_borrowings_data
     })
 
+@app.route('/api/add-reservation', methods=['POST'])
+def add_reservation_alias():
+    return reserve_asset()  # just call your existing function
 
+@app.route('/api/add-web-reservation', methods=['POST'])
+def add_web_reservation():
+    data = request.get_json()
+    try:
+        new_reservation = Reservation(
+            asset_id=data['asset_id'],
+            item=data['item'],
+            resident_name=data['resident_name'],
+            purpose=data.get('purpose', ''),
+            status='Approved',  # ✅ Directly approved, no pending request
+            request_date=datetime.strptime(data['reservation_date'], '%Y-%m-%d')
+        )
+        db.session.add(new_reservation)
+        db.session.commit()
+        return jsonify({'message': 'Web reservation added successfully'}), 200
+    except Exception as e:
+        return jsonify({'error': str(e)}), 400
+
+@app.route('/api/add-web-borrowing', methods=['POST'])
+def add_web_borrowing():
+    data = request.get_json()
+    try:
+        new_borrow = Borrowing(
+            asset_id=data['asset_id'],
+            item=data['item'],
+            resident_name=data['resident_name'],
+            quantity=data.get('quantity', 1),
+            purpose=data.get('purpose', ''),
+            status='Approved',  # ✅ Directly approved, no pending request
+            request_date=datetime.strptime(data['request_date'], '%Y-%m-%d'),
+            return_date=datetime.strptime(data['return_date'], '%Y-%m-%d')
+        )
+        db.session.add(new_borrow)
+        db.session.commit()
+        return jsonify({'message': 'Web borrowing added successfully'}), 200
+    except Exception as e:
+        return jsonify({'error': str(e)}), 400
+
+@app.route('/api/reservations/<int:asset_id>/<string:date>', methods=['GET'])
+def get_reservations_for_asset_and_date(asset_id, date):
+    try:
+        target_date = datetime.strptime(date, '%Y-%m-%d').date()
+        reservations = Reservation.query.filter(
+            Reservation.asset_id == asset_id,
+            Reservation.reservation_start >= datetime.combine(target_date, time(0, 0)),
+            Reservation.reservation_end <= datetime.combine(target_date, time(23, 59)),
+            Reservation.status.in_(["Pending", "Approved"])
+        ).all()
+
+        result = []
+        for r in reservations:
+            result.append({
+                'reservation_start': r.reservation_start.isoformat(),
+                'reservation_end': r.reservation_end.isoformat(),
+                'resident_name': r.resident_name,
+                'purpose': r.purpose,
+                'status': r.status
+            })
+
+        return jsonify(result)
+
+    except Exception as e:
+        return jsonify({'error': str(e)}), 400
 
 
 if __name__ == '__main__':
