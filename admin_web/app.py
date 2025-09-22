@@ -582,12 +582,15 @@ def help_page():
 
 @app.route('/api/register', methods=['POST'])
 def register_resident():
-    full_name = request.form.get('full_name')
-    gender = request.form.get('gender')
-    purok = request.form.get('purok')  # ✅ added
-    phone_number = request.form.get('phone_number')
-    username = request.form.get('username')
-    raw_password = request.form.get('password')
+    def register_resident():
+    data = request.get_json()  # Read JSON payload
+
+    full_name = data.get('full_name')
+    gender = data.get('gender')
+    purok = data.get('purok')
+    phone_number = data.get('phone_number')
+    username = data.get('username')
+    raw_password = data.get('password')
 
     id_picture = request.files.get('id_picture')
     selfie_picture = request.files.get('selfie_picture')  # ✅ added
