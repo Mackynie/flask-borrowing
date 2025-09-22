@@ -96,14 +96,6 @@ app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 db = SQLAlchemy(app)
 
 
-# Instead of absolute path
-id_filename = f"{username}_id.jpg"
-selfie_filename = f"{username}_selfie.jpg"
-
-id_picture_path = f"id_pictures/{id_filename}"       # relative to static/
-selfie_picture_path = f"selfie_pictures/{selfie_filename}"
-
-# Save the files
 
 
 TEXTBEE_API_KEY = os.environ.get('TEXTBEE_API_KEY')
@@ -587,10 +579,12 @@ def help_page():
 def register_resident():
     data = request.get_json()  # JSON payload from frontend
 
+    # Required fields
     required_fields = ['full_name', 'gender', 'purok', 'phone_number', 'username', 'password', 'id_picture', 'selfie_picture']
     if not all(field in data and data[field] for field in required_fields):
         return jsonify({'error': 'All fields including ID and selfie picture are required'}), 400
 
+    # Extract data
     full_name = data['full_name']
     gender = data['gender']
     purok = data['purok']
@@ -600,8 +594,11 @@ def register_resident():
 
     # Decode Base64 images
     import base64
-    id_bytes = base64.b64decode(data['id_picture'])
-    selfie_bytes = base64.b64decode(data['selfie_picture'])
+    try:
+        id_bytes = base64.b64decode(data['id_picture'])
+        selfie_bytes = base64.b64decode(data['selfie_picture'])
+    except Exception as e:
+        return jsonify({'error': 'Invalid Base64 image data'}), 400
 
     # Define folders inside static/
     ID_FOLDER = os.path.join('static', 'id_pictures')
@@ -609,12 +606,13 @@ def register_resident():
     os.makedirs(ID_FOLDER, exist_ok=True)
     os.makedirs(SELFIE_FOLDER, exist_ok=True)
 
-    # Save images and create relative paths for DB
+    # Generate filenames and relative paths
     id_filename = f"{username}_id.jpg"
     selfie_filename = f"{username}_selfie.jpg"
-    id_picture_path = f"id_pictures/{id_filename}"        # relative path
-    selfie_picture_path = f"selfie_pictures/{selfie_filename}"  # relative path
+    id_picture_path = f"id_pictures/{id_filename}"        # relative path for DB
+    selfie_picture_path = f"selfie_pictures/{selfie_filename}"  # relative path for DB
 
+    # Save images to disk
     try:
         with open(os.path.join(ID_FOLDER, id_filename), 'wb') as f:
             f.write(id_bytes)
@@ -627,6 +625,10 @@ def register_resident():
     # Hash password
     from werkzeug.security import generate_password_hash
     hashed_password = generate_password_hash(raw_password, method='pbkdf2:sha256', salt_length=8)
+
+    # Check if username already exists
+    if Resident.query.filter_by(username=username).first():
+        return jsonify({'error': 'Username already taken'}), 400
 
     # Save resident to DB
     resident = Resident(
@@ -644,6 +646,7 @@ def register_resident():
     db.session.commit()
 
     return jsonify({'message': 'Registration successful. Your account is pending admin verification.'}), 201
+
 
 
 @app.route('/api/login', methods=['POST'])
