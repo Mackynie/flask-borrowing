@@ -11,12 +11,14 @@ from werkzeug.utils import secure_filename
 import requests
 from apscheduler.schedulers.background import BackgroundScheduler
 from functools import wraps
+from flask_cors import CORS
 
 
 # Required for PyMySQL to work with SQLAlchemy
 pymysql.install_as_MySQLdb()
 
 app = Flask(__name__)
+CORS(app)
 app.secret_key = os.environ.get('SECRET_KEY', 'dev-secret')
 
 # Admin credentials
