@@ -96,14 +96,16 @@ app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 db = SQLAlchemy(app)
 
 
-# Separate folders for ID and Selfie pictures
-ID_UPLOAD_FOLDER = r'C:\Users\renel\Desktop\BARMA\admin_web\static\id_pictures'
-SELFIE_UPLOAD_FOLDER = r'C:\Users\renel\Desktop\BARMA\admin_web\static\selfie_pictures'
-ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg'}
+# Instead of absolute path
+id_filename = f"{username}_id.jpg"
+selfie_filename = f"{username}_selfie.jpg"
 
-# Ensure both folders exist
-os.makedirs(ID_UPLOAD_FOLDER, exist_ok=True)
-os.makedirs(SELFIE_UPLOAD_FOLDER, exist_ok=True)
+id_picture_path = f"id_pictures/{id_filename}"       # relative to static/
+selfie_picture_path = f"selfie_pictures/{selfie_filename}"
+
+# Save the files
+id_picture.save(os.path.join('static', id_picture_path))
+selfie_picture.save(os.path.join('static', selfie_picture_path))
 
 
 TEXTBEE_API_KEY = os.environ.get('TEXTBEE_API_KEY')
