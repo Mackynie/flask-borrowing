@@ -489,7 +489,7 @@ def approve_borrowing(id):
     if resident:
         send_sms(
             resident.phone_number,
-            f"Hi {resident.full_name}, your borrowing request for {borrowing.item} ({borrowing.quantity}) has been APPROVED. You may now claim the item(s) at the Barangay Hall. Kindly ensure that the asset is returned on or before {borrowing.return_date} to avoid."
+            f"Hi {resident.full_name}, your borrowing request for {borrowing.item} ({borrowing.quantity}) has been APPROVED. You may now claim the item(s) at the Barangay Hall. Kindly ensure that the asset is returned on or before {borrowing.return_date} to avoid inconvenience."
         )
 
     return redirect(url_for('dashboard'))
