@@ -12,6 +12,7 @@ import requests
 from apscheduler.schedulers.background import BackgroundScheduler
 from functools import wraps
 from flask_cors import CORS
+import base64
 
 
 # Required for PyMySQL to work with SQLAlchemy
@@ -584,77 +585,56 @@ def help_page():
 
 @app.route('/api/register', methods=['POST'])
 def register_resident():
-    data = request.get_json()  # Read JSON payload
-    full_name = data.get('full_name')
-    gender = data.get('gender')
-    purok = data.get('purok')
-    phone_number = data.get('phone_number')
-    username = data.get('username')
-    raw_password = data.get('password')
+    data = request.get_json()  # get JSON payload
 
-    id_picture = request.files.get('id_picture')
-    selfie_picture = request.files.get('selfie_picture')  # ✅ added
-
-    # Validate required fields
-    if not all([full_name, gender, purok, phone_number, username, raw_password, id_picture, selfie_picture]):
+    required_fields = ['full_name', 'gender', 'purok', 'phone_number', 'username', 'password', 'id_picture', 'selfie_picture']
+    if not all(field in data and data[field] for field in required_fields):
         return jsonify({'error': 'All fields including ID and selfie picture are required'}), 400
 
-    # Validate phone number (PH format)
-    if not re.fullmatch(r'^(09|\+639)\d{9}$', phone_number):
-        return jsonify({'error': 'Invalid phone number format. Use 09XXXXXXXXX or +639XXXXXXXXX'}), 400
+    full_name = data['full_name']
+    gender = data['gender']
+    purok = data['purok']
+    phone_number = data['phone_number']
+    username = data['username']
+    raw_password = data['password']
 
-    # Validate password
-    if not re.fullmatch(r'^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&]).{8,}$', raw_password):
-        return jsonify({
-            'error': 'Password must be at least 8 characters and include uppercase, lowercase, number, and special character'
-        }), 400
+    # Decode Base64 images
+    id_bytes = base64.b64decode(data['id_picture'])
+    selfie_bytes = base64.b64decode(data['selfie_picture'])
 
-    # Validate image file types
-    if not (allowed_file(id_picture.filename) and allowed_file(selfie_picture.filename)):
-        return jsonify({'error': 'Only JPG, JPEG, PNG formats are allowed for images.'}), 400
+    # Save images
+    ID_UPLOAD_FOLDER = 'id_pictures'
+    SELFIE_UPLOAD_FOLDER = 'selfie_pictures'
+    os.makedirs(ID_UPLOAD_FOLDER, exist_ok=True)
+    os.makedirs(SELFIE_UPLOAD_FOLDER, exist_ok=True)
 
-    # Check for duplicate username or full name
-    if Resident.query.filter_by(username=username).first():
-        return jsonify({'error': 'Username already taken'}), 400
+    id_path = os.path.join(ID_UPLOAD_FOLDER, f"{username}_id.jpg")
+    selfie_path = os.path.join(SELFIE_UPLOAD_FOLDER, f"{username}_selfie.jpg")
 
-    if Resident.query.filter_by(full_name=full_name).first():
-        return jsonify({'error': 'An account already exists for this full name'}), 400
-
-    # Save files to correct folders
-    id_filename = secure_filename(id_picture.filename)
-    selfie_filename = secure_filename(selfie_picture.filename)
-
-    id_picture_path = os.path.join('id_pictures', id_filename).replace('\\', '/')
-    selfie_picture_path = os.path.join('selfie_pictures', selfie_filename).replace('\\', '/')
-
-    try:
-        id_picture.save(os.path.join(ID_UPLOAD_FOLDER, id_filename).replace('\\', '/'))
-        selfie_picture.save(os.path.join(SELFIE_UPLOAD_FOLDER, selfie_filename).replace('\\', '/'))
-    except Exception as e:
-        print(f"File save error: {e}")
-        return jsonify({'error': 'Failed to save uploaded images'}), 500
+    with open(id_path, 'wb') as f:
+        f.write(id_bytes)
+    with open(selfie_path, 'wb') as f:
+        f.write(selfie_bytes)
 
     # Hash password
     hashed_password = generate_password_hash(raw_password, method='pbkdf2:sha256', salt_length=8)
 
+    # Save resident to DB
     resident = Resident(
-    full_name=full_name,
-    gender=gender,
-    phone_number=phone_number,
-    username=username,
-    password=hashed_password,
-    id_picture_path=id_picture_path,  # store relative path only
-    selfie_picture_path=selfie_picture_path,  # store relative path only
-    purok=purok,
-    is_verified=False
-)
-
+        full_name=full_name,
+        gender=gender,
+        phone_number=phone_number,
+        username=username,
+        password=hashed_password,
+        id_picture_path=id_path,
+        selfie_picture_path=selfie_path,
+        purok=purok,
+        is_verified=False
+    )
     db.session.add(resident)
     db.session.commit()
 
     return jsonify({'message': 'Registration successful. Your account is pending admin verification.'}), 201
-
-
 
 @app.route('/api/login', methods=['POST'])
 def login_resident():
