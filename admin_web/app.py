@@ -587,7 +587,7 @@ def help_page():
 
 @app.route('/api/register', methods=['POST'])
 def register_resident():
-    data = request.get_json()  # get JSON payload
+    data = request.get_json()  # JSON payload from frontend
 
     required_fields = ['full_name', 'gender', 'purok', 'phone_number', 'username', 'password', 'id_picture', 'selfie_picture']
     if not all(field in data and data[field] for field in required_fields):
@@ -601,24 +601,33 @@ def register_resident():
     raw_password = data['password']
 
     # Decode Base64 images
+    import base64
     id_bytes = base64.b64decode(data['id_picture'])
     selfie_bytes = base64.b64decode(data['selfie_picture'])
 
-    # Save images
-    ID_UPLOAD_FOLDER = 'id_pictures'
-    SELFIE_UPLOAD_FOLDER = 'selfie_pictures'
-    os.makedirs(ID_UPLOAD_FOLDER, exist_ok=True)
-    os.makedirs(SELFIE_UPLOAD_FOLDER, exist_ok=True)
+    # Define folders inside static/
+    ID_FOLDER = os.path.join('static', 'id_pictures')
+    SELFIE_FOLDER = os.path.join('static', 'selfie_pictures')
+    os.makedirs(ID_FOLDER, exist_ok=True)
+    os.makedirs(SELFIE_FOLDER, exist_ok=True)
 
-    id_path = os.path.join(ID_UPLOAD_FOLDER, f"{username}_id.jpg")
-    selfie_path = os.path.join(SELFIE_UPLOAD_FOLDER, f"{username}_selfie.jpg")
+    # Save images and create relative paths for DB
+    id_filename = f"{username}_id.jpg"
+    selfie_filename = f"{username}_selfie.jpg"
+    id_picture_path = f"id_pictures/{id_filename}"        # relative path
+    selfie_picture_path = f"selfie_pictures/{selfie_filename}"  # relative path
 
-    with open(id_path, 'wb') as f:
-        f.write(id_bytes)
-    with open(selfie_path, 'wb') as f:
-        f.write(selfie_bytes)
+    try:
+        with open(os.path.join(ID_FOLDER, id_filename), 'wb') as f:
+            f.write(id_bytes)
+        with open(os.path.join(SELFIE_FOLDER, selfie_filename), 'wb') as f:
+            f.write(selfie_bytes)
+    except Exception as e:
+        print(f"File save error: {e}")
+        return jsonify({'error': 'Failed to save uploaded images'}), 500
 
     # Hash password
+    from werkzeug.security import generate_password_hash
     hashed_password = generate_password_hash(raw_password, method='pbkdf2:sha256', salt_length=8)
 
     # Save resident to DB
@@ -628,8 +637,8 @@ def register_resident():
         phone_number=phone_number,
         username=username,
         password=hashed_password,
-        id_picture_path=id_path,
-        selfie_picture_path=selfie_path,
+        id_picture_path=id_picture_path,
+        selfie_picture_path=selfie_picture_path,
         purok=purok,
         is_verified=False
     )
@@ -637,6 +646,7 @@ def register_resident():
     db.session.commit()
 
     return jsonify({'message': 'Registration successful. Your account is pending admin verification.'}), 201
+
 
 @app.route('/api/login', methods=['POST'])
 def login_resident():
