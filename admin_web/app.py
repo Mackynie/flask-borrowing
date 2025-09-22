@@ -807,7 +807,8 @@ def reserve_asset():
             purpose=data['purpose'],
             status='Pending',
             reservation_start=reservation_start,
-            reservation_end=reservation_end
+            reservation_end=reservation_end,
+            request_date=datetime.utcnow().date()
         )
         db.session.add(new_reservation)
         db.session.commit()
