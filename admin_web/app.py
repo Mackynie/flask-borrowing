@@ -214,6 +214,7 @@ class Reservation(db.Model):
     status = db.Column(db.Enum('Pending', 'Approved', 'Rejected'), default='Pending')
     rejection_reason = db.Column(db.String(255), nullable=True)
     asset_id = db.Column(db.Integer, db.ForeignKey('assets.id'), nullable=False)
+    request_date = db.Column(db.Date, nullable=True)
 
 
 
