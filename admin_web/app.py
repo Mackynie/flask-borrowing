@@ -1,7 +1,8 @@
 import os
 from flask import Flask, flash, render_template, request, redirect, url_for, session, jsonify
 from flask_sqlalchemy import SQLAlchemy
-from sqlalchemy import and_
+from sqlalchemy import and_, func
+
 import pymysql
 import threading
 from datetime import datetime, date, timedelta, time
@@ -148,20 +149,23 @@ def send_return_reminders():
     tomorrow_ph = today_ph + timedelta(days=1)
 
     borrowings = Borrowing.query.filter(
-        Borrowing.return_date == tomorrow_ph,
+        func.date(Borrowing.return_date) == tomorrow_ph,
         Borrowing.status == 'Approved'
     ).all()
+
+    print("Checking reminders for:", tomorrow_ph, "found:", len(borrowings))
 
     for b in borrowings:
         resident = b.resident
         if resident:
-            send_sms(resident.phone_number,
-                     f"Reminder: Please return {b.item} tomorrow ({b.return_date}).")
+            send_sms(
+                resident.phone_number,
+                f"Reminder: Please return {b.item} tomorrow ({b.return_date})."
+            )
 
-scheduler = BackgroundScheduler()
-scheduler.add_job(send_return_reminders, 'interval', hours=24)  # runs daily
+scheduler = BackgroundScheduler(timezone=PH_TZ)
+scheduler.add_job(send_return_reminders, 'cron', hour=8)  # runs daily 8 AM PH time
 scheduler.start()
-
 def allowed_file(filename):
     return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
 
