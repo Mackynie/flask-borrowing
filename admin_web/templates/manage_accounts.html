@@ -9,7 +9,6 @@
   <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
   <link rel="stylesheet" href="https://unpkg.com/aos@2.3.1/dist/aos.css" />
   <style>
-    /* Ensure modal scrolls if image is too large */
     .modal-body {
       max-height: 70vh;
       overflow-y: auto;
@@ -20,10 +19,9 @@
       height: auto;
       display: block;
       margin: 0 auto;
-      pointer-events: none; /* ensures clicks go through to modal buttons */
+      pointer-events: none;
     }
 
-    /* Fix modal stacking */
     .modal {
       z-index: 1055 !important;
     }
@@ -132,8 +130,6 @@
                   <th>Phone</th>
                   <th>Username</th>
                   <th>Purok</th>
-                  <th>ID Picture</th>
-                  <th>Selfie</th>
                   <th class="text-center">Action</th>
                 </tr>
               </thead>
@@ -145,18 +141,6 @@
                   <td>{{ r.phone_number }}</td>
                   <td>{{ r.username }}</td>
                   <td>{{ r.purok }}</td>
-                  <td>
-                    {% if r.id_picture_path %}
-                      <button class="btn btn-outline-primary btn-sm" data-bs-toggle="modal" data-bs-target="#residentIDModal{{ r.id }}">Preview</button>
-                      <a href="{{ url_for('static', filename=r.id_picture_path) }}" download class="btn btn-outline-secondary btn-sm">Download</a>
-                    {% else %} No ID Uploaded {% endif %}
-                  </td>
-                  <td>
-                    {% if r.selfie_picture_path %}
-                      <button class="btn btn-outline-info btn-sm" data-bs-toggle="modal" data-bs-target="#residentSelfieModal{{ r.id }}">Preview</button>
-                      <a href="{{ url_for('static', filename=r.selfie_picture_path) }}" download class="btn btn-outline-secondary btn-sm">Download</a>
-                    {% else %} No Selfie Uploaded {% endif %}
-                  </td>
                   <td class="text-center">
                     {% if r.is_restricted %}
                       <a href="{{ url_for('restrict_resident', id=r.id) }}" class="btn btn-sm btn-outline-success">
