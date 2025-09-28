@@ -13,6 +13,7 @@ from apscheduler.schedulers.background import BackgroundScheduler
 from functools import wraps
 from flask_cors import CORS
 import base64
+import pytz
 
 
 
@@ -140,13 +141,22 @@ def admin_required(f):
         return f(*args, **kwargs)
     return decorated_function
 
+PH_TZ = pytz.timezone('Asia/Manila')
+
 def send_return_reminders():
-    tomorrow = datetime.utcnow().date() + timedelta(days=1)
-    borrowings = Borrowing.query.filter(Borrowing.return_date == tomorrow, Borrowing.status == 'Approved').all()
+    today_ph = datetime.now(PH_TZ).date()
+    tomorrow_ph = today_ph + timedelta(days=1)
+
+    borrowings = Borrowing.query.filter(
+        Borrowing.return_date == tomorrow_ph,
+        Borrowing.status == 'Approved'
+    ).all()
+
     for b in borrowings:
-        resident = b.resident  # assuming Borrowing has a relationship to Resident
+        resident = b.resident
         if resident:
-            send_sms(resident.phone_number, f"Reminder: Please return {b.item} tomorrow ({b.return_date}).")
+            send_sms(resident.phone_number,
+                     f"Reminder: Please return {b.item} tomorrow ({b.return_date}).")
 
 scheduler = BackgroundScheduler()
 scheduler.add_job(send_return_reminders, 'interval', hours=24)  # runs daily
