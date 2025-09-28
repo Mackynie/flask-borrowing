@@ -618,18 +618,25 @@ def register_resident():
         return jsonify({'error': 'An account already exists for this full name'}), 400
 
     # Save files to correct folders
-    id_filename = secure_filename(id_picture.filename)
-    selfie_filename = secure_filename(selfie_picture.filename)
+    # Save files inside static/ folder for web access
+    id_filename = f"{username}_id.jpg"
+    selfie_filename = f"{username}_selfie.jpg"
 
-    id_picture_path = os.path.join('id_pictures', id_filename).replace('\\', '/')
-    selfie_picture_path = os.path.join('selfie_pictures', selfie_filename).replace('\\', '/')
+    id_picture_path = f"id_pictures/{id_filename}"       # relative path for DB
+    selfie_picture_path = f"selfie_pictures/{selfie_filename}"
 
     try:
-        id_picture.save(os.path.join(ID_UPLOAD_FOLDER, id_filename).replace('\\', '/'))
-        selfie_picture.save(os.path.join(SELFIE_UPLOAD_FOLDER, selfie_filename).replace('\\', '/'))
+        # Ensure folders exist
+        os.makedirs(os.path.join('static', 'id_pictures'), exist_ok=True)
+        os.makedirs(os.path.join('static', 'selfie_pictures'), exist_ok=True)
+
+        # Save files
+        id_picture.save(os.path.join('static', id_picture_path))
+        selfie_picture.save(os.path.join('static', selfie_picture_path))
     except Exception as e:
         print(f"File save error: {e}")
         return jsonify({'error': 'Failed to save uploaded images'}), 500
+
 
     # Hash password
     hashed_password = generate_password_hash(raw_password, method='pbkdf2:sha256', salt_length=8)
@@ -811,7 +818,8 @@ def reserve_asset():
             purpose=data['purpose'],
             status='Pending',
             reservation_start=reservation_start,
-            reservation_end=reservation_end
+            reservation_end=reservation_end,
+            request_date=datetime.utcnow().date()
         )
         db.session.add(new_reservation)
         db.session.commit()
