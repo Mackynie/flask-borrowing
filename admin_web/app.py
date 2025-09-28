@@ -11,12 +11,17 @@ from werkzeug.utils import secure_filename
 import requests
 from apscheduler.schedulers.background import BackgroundScheduler
 from functools import wraps
+from flask_cors import CORS
+import base64
+
 
 
 # Required for PyMySQL to work with SQLAlchemy
 pymysql.install_as_MySQLdb()
 
+
 app = Flask(__name__)
+CORS(app)
 app.secret_key = os.environ.get('SECRET_KEY', 'dev-secret')
 
 # Admin credentials
@@ -93,14 +98,6 @@ app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 db = SQLAlchemy(app)
 
 
-# Separate folders for ID and Selfie pictures
-ID_UPLOAD_FOLDER = r'C:\Users\renel\Desktop\BARMA\admin_web\static\id_pictures'
-SELFIE_UPLOAD_FOLDER = r'C:\Users\renel\Desktop\BARMA\admin_web\static\selfie_pictures'
-ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg'}
-
-# Ensure both folders exist
-os.makedirs(ID_UPLOAD_FOLDER, exist_ok=True)
-os.makedirs(SELFIE_UPLOAD_FOLDER, exist_ok=True)
 
 
 TEXTBEE_API_KEY = os.environ.get('TEXTBEE_API_KEY')
@@ -217,6 +214,7 @@ class Reservation(db.Model):
     status = db.Column(db.Enum('Pending', 'Approved', 'Rejected'), default='Pending')
     rejection_reason = db.Column(db.String(255), nullable=True)
     asset_id = db.Column(db.Integer, db.ForeignKey('assets.id'), nullable=False)
+    request_date = db.Column(db.Date, nullable=True)
 
 
 
@@ -494,7 +492,7 @@ def approve_borrowing(id):
     if resident:
         send_sms(
             resident.phone_number,
-            f"Hi {resident.full_name}, your borrowing request for {borrowing.item} ({borrowing.quantity}) has been APPROVED. You may now claim the item(s) at the Barangay Hall. Kindly ensure that the asset is returned on or before {borrowing.return_date} to avoid."
+            f"Hi {resident.full_name}, your borrowing request for {borrowing.item} ({borrowing.quantity}) has been APPROVED. You may now claim the item(s) at the Barangay Hall. Kindly ensure that the asset is returned on or before {borrowing.return_date} to avoid inconvenience."
         )
 
     return redirect(url_for('dashboard'))
@@ -582,77 +580,71 @@ def help_page():
 
 @app.route('/api/register', methods=['POST'])
 def register_resident():
-    full_name = request.form.get('full_name')
-    gender = request.form.get('gender')
-    purok = request.form.get('purok')  # ✅ added
-    phone_number = request.form.get('phone_number')
-    username = request.form.get('username')
-    raw_password = request.form.get('password')
+    data = request.get_json()  # JSON payload from frontend
 
-    id_picture = request.files.get('id_picture')
-    selfie_picture = request.files.get('selfie_picture')  # ✅ added
-
-    # Validate required fields
-    if not all([full_name, gender, purok, phone_number, username, raw_password, id_picture, selfie_picture]):
+    # Required fields
+    required_fields = ['full_name', 'gender', 'purok', 'phone_number', 'username', 'password', 'id_picture', 'selfie_picture']
+    if not all(field in data and data[field] for field in required_fields):
         return jsonify({'error': 'All fields including ID and selfie picture are required'}), 400
 
-    # Validate phone number (PH format)
-    if not re.fullmatch(r'^(09|\+639)\d{9}$', phone_number):
-        return jsonify({'error': 'Invalid phone number format. Use 09XXXXXXXXX or +639XXXXXXXXX'}), 400
+    # Extract data
+    full_name = data['full_name']
+    gender = data['gender']
+    purok = data['purok']
+    phone_number = data['phone_number']
+    username = data['username']
+    raw_password = data['password']
 
-    # Validate password
-    if not re.fullmatch(r'^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&]).{8,}$', raw_password):
-        return jsonify({
-            'error': 'Password must be at least 8 characters and include uppercase, lowercase, number, and special character'
-        }), 400
+    # Decode Base64 images
+    import base64
+    try:
+        id_bytes = base64.b64decode(data['id_picture'])
+        selfie_bytes = base64.b64decode(data['selfie_picture'])
+    except Exception as e:
+        return jsonify({'error': 'Invalid Base64 image data'}), 400
 
-    # Validate image file types
-    if not (allowed_file(id_picture.filename) and allowed_file(selfie_picture.filename)):
-        return jsonify({'error': 'Only JPG, JPEG, PNG formats are allowed for images.'}), 400
+    # Define folders inside static/
+    ID_FOLDER = os.path.join('static', 'id_pictures')
+    SELFIE_FOLDER = os.path.join('static', 'selfie_pictures')
+    os.makedirs(ID_FOLDER, exist_ok=True)
+    os.makedirs(SELFIE_FOLDER, exist_ok=True)
 
-    # Check for duplicate username or full name
-    if Resident.query.filter_by(username=username).first():
-        return jsonify({'error': 'Username already taken'}), 400
-
-    if Resident.query.filter_by(full_name=full_name).first():
-        return jsonify({'error': 'An account already exists for this full name'}), 400
-
-    # Save files to correct folders
-    # Save files inside static/ folder for web access
+    # Generate filenames and relative paths
     id_filename = f"{username}_id.jpg"
     selfie_filename = f"{username}_selfie.jpg"
+    id_picture_path = f"id_pictures/{id_filename}"        # relative path for DB
+    selfie_picture_path = f"selfie_pictures/{selfie_filename}"  # relative path for DB
 
-    id_picture_path = f"id_pictures/{id_filename}"       # relative path for DB
-    selfie_picture_path = f"selfie_pictures/{selfie_filename}"
-
+    # Save images to disk
     try:
-        # Ensure folders exist
-        os.makedirs(os.path.join('static', 'id_pictures'), exist_ok=True)
-        os.makedirs(os.path.join('static', 'selfie_pictures'), exist_ok=True)
-
-        # Save files
-        id_picture.save(os.path.join('static', id_picture_path))
-        selfie_picture.save(os.path.join('static', selfie_picture_path))
+        with open(os.path.join(ID_FOLDER, id_filename), 'wb') as f:
+            f.write(id_bytes)
+        with open(os.path.join(SELFIE_FOLDER, selfie_filename), 'wb') as f:
+            f.write(selfie_bytes)
     except Exception as e:
         print(f"File save error: {e}")
         return jsonify({'error': 'Failed to save uploaded images'}), 500
 
-
     # Hash password
+    from werkzeug.security import generate_password_hash
     hashed_password = generate_password_hash(raw_password, method='pbkdf2:sha256', salt_length=8)
 
-    resident = Resident(
-    full_name=full_name,
-    gender=gender,
-    phone_number=phone_number,
-    username=username,
-    password=hashed_password,
-    id_picture_path=id_picture_path,  # store relative path only
-    selfie_picture_path=selfie_picture_path,  # store relative path only
-    purok=purok,
-    is_verified=False
-)
+    # Check if username already exists
+    if Resident.query.filter_by(username=username).first():
+        return jsonify({'error': 'Username already taken'}), 400
 
+    # Save resident to DB
+    resident = Resident(
+        full_name=full_name,
+        gender=gender,
+        phone_number=phone_number,
+        username=username,
+        password=hashed_password,
+        id_picture_path=id_picture_path,
+        selfie_picture_path=selfie_picture_path,
+        purok=purok,
+        is_verified=False
+    )
     db.session.add(resident)
     db.session.commit()
 
