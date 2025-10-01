@@ -2,7 +2,6 @@ import os
 from flask import Flask, flash, render_template, request, redirect, url_for, session, jsonify
 from flask_sqlalchemy import SQLAlchemy
 from sqlalchemy import and_, func
-
 import pymysql
 import threading
 from datetime import datetime, date, timedelta, time
