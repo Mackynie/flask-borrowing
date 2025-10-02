@@ -18,7 +18,6 @@ import pytz
 
 
 
-
 # Required for PyMySQL to work with SQLAlchemy
 pymysql.install_as_MySQLdb()
 
