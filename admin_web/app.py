@@ -1324,18 +1324,21 @@ def update_reservation(reservation_id):
         new_start = datetime.strptime(data['reservation_start'], '%Y-%m-%d %H:%M')
         new_end = datetime.strptime(data['reservation_end'], '%Y-%m-%d %H:%M')
 
-        # ✅ Strict overlap check (same as in /api/reserve)
+        if new_end <= new_start:
+            return jsonify({'error': 'End time must be after start time.'}), 400
+
+        # ✅ Stricter overlap check (includes edge cases like touching times)
         conflicts = Reservation.query.filter(
             Reservation.id != reservation_id,
             Reservation.asset_id == reservation.asset_id,
             Reservation.status.in_(["Approved", "Pending"]),
-            Reservation.reservation_start < new_end,
-            Reservation.reservation_end > new_start
+            Reservation.reservation_start <= new_end,
+            Reservation.reservation_end >= new_start
         ).all()
 
         if conflicts:
             return jsonify({
-                'error': 'This time slot is already reserved.',
+                'error': 'This time slot overlaps an existing reservation.',
                 'conflicts': [
                     {
                         'id': c.id,
@@ -1348,11 +1351,11 @@ def update_reservation(reservation_id):
                 ]
             }), 400
 
-        # Update reservation details
+        # ✅ Proceed with update
         reservation.reservation_start = new_start
         reservation.reservation_end = new_end
         reservation.purpose = data.get('purpose', reservation.purpose)
-        reservation.status = 'Pending'  # resubmit for approval
+        reservation.status = 'Pending'
 
         db.session.commit()
         return jsonify({'message': 'Reservation updated and sent for approval'}), 200
@@ -1360,7 +1363,6 @@ def update_reservation(reservation_id):
     except Exception as e:
         db.session.rollback()
         return jsonify({'error': str(e)}), 400
-
 
 
 
