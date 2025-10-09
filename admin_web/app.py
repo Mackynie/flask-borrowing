@@ -1318,41 +1318,42 @@ def update_reservation(reservation_id):
     try:
         reservation = Reservation.query.get_or_404(reservation_id)
 
-        if 'reservation_start' in data:
-            new_start = datetime.strptime(data['reservation_start'], '%Y-%m-%d %H:%M')
+        if 'reservation_start' not in data or 'reservation_end' not in data:
+            return jsonify({'error': 'Start and end times are required'}), 400
 
-            # find conflicts
-            conflicts = Reservation.query.filter(
-                Reservation.id != reservation_id,
-                Reservation.reservation_start == new_start,
-                Reservation.status.in_(["Approved", "Pending"])
-            ).all()
+        new_start = datetime.strptime(data['reservation_start'], '%Y-%m-%d %H:%M')
+        new_end = datetime.strptime(data['reservation_end'], '%Y-%m-%d %H:%M')
 
-            if conflicts:
-                return jsonify({
-                    'error': 'This time slot is already reserved.',
-                    'conflicts': [
-                        {
-                            'id': c.id,
-                            'start': c.reservation_start.strftime('%Y-%m-%d %H:%M'),
-                            'end': c.reservation_end.strftime('%Y-%m-%d %H:%M'),
-                            'status': c.status,
-                            'purpose': c.purpose
-                        }
-                        for c in conflicts
-                    ]
-                }), 400
+        # ✅ Strict overlap check (same as in /api/reserve)
+        conflicts = Reservation.query.filter(
+            Reservation.id != reservation_id,
+            Reservation.asset_id == reservation.asset_id,
+            Reservation.status.in_(["Approved", "Pending"]),
+            Reservation.reservation_start < new_end,
+            Reservation.reservation_end > new_start
+        ).all()
 
-            reservation.reservation_start = new_start
+        if conflicts:
+            return jsonify({
+                'error': 'This time slot is already reserved.',
+                'conflicts': [
+                    {
+                        'id': c.id,
+                        'start': c.reservation_start.strftime('%Y-%m-%d %H:%M'),
+                        'end': c.reservation_end.strftime('%Y-%m-%d %H:%M'),
+                        'status': c.status,
+                        'purpose': c.purpose
+                    }
+                    for c in conflicts
+                ]
+            }), 400
 
-        if 'reservation_end' in data:
-            new_end = datetime.strptime(data['reservation_end'], '%Y-%m-%d %H:%M')
-            reservation.reservation_end = new_end
+        # Update reservation details
+        reservation.reservation_start = new_start
+        reservation.reservation_end = new_end
+        reservation.purpose = data.get('purpose', reservation.purpose)
+        reservation.status = 'Pending'  # resubmit for approval
 
-        if 'purpose' in data:
-            reservation.purpose = data['purpose']
-
-        reservation.status = 'Pending'
         db.session.commit()
         return jsonify({'message': 'Reservation updated and sent for approval'}), 200
 
