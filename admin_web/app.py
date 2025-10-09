@@ -645,14 +645,16 @@ def register_resident():
     hashed_password = generate_password_hash(raw_password, method='pbkdf2:sha256', salt_length=8)
 
     # Check if username already exists
-    if Resident.query.filter_by(username=username).first():
-        return jsonify({'error': 'Username already taken'}), 400
+    if Resident.query.filter_by(full_name=full_name).first():
+        return jsonify({'error': 'Full name already registered'}), 400
 
     if Resident.query.filter_by(phone_number=phone_number).first():
         return jsonify({'error': 'Phone number already registered'}), 400
+        
+    if Resident.query.filter_by(username=username).first():
+        return jsonify({'error': 'Username already taken'}), 400
 
-    if Resident.query.filter_by(full_name=full_name).first():
-        return jsonify({'error': 'Full name already registered'}), 400
+
 
     # Save resident to DB
     resident = Resident(
