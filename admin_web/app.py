@@ -151,7 +151,7 @@ PH_TZ = pytz.timezone('Asia/Manila')
 
 # --- Reminder function ---
 def send_return_reminders():
-    from your_model_file import Borrowing, db  # adjust import if needed
+    
     today_ph = datetime.now(PH_TZ).date()
     tomorrow_ph = today_ph + timedelta(days=1)
 
