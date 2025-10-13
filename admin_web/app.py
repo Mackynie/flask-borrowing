@@ -180,6 +180,9 @@ scheduler = BackgroundScheduler(timezone=PH_TZ)
 scheduler.add_job(send_return_reminders, 'interval', hours=2)
 scheduler.start()
 
+with app.app_context():
+    send_return_reminders()
+
 
 def allowed_file(filename):
     return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
