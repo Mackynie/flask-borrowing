@@ -227,8 +227,12 @@ class Borrowing(db.Model):
     due_date = db.Column(db.Date)
     status = db.Column(db.Enum('Pending', 'Approved', 'Rejected', 'Returned', 'Return Requested'), default='Pending')
     rejection_reason = db.Column(db.String(255), nullable=True)
-    
-    asset_id = db.Column(db.Integer, db.ForeignKey('assets.id'), nullable=False)  # ✅ Add this
+
+    asset_id = db.Column(db.Integer, db.ForeignKey('assets.id'), nullable=False)
+
+    # ✅ Link to Resident
+    resident_id = db.Column(db.Integer, db.ForeignKey('residents.id'), nullable=True)
+    resident = db.relationship('Resident', backref='borrowings')
 
 
 
@@ -294,24 +298,26 @@ PH_TZ = pytz.timezone('Asia/Manila')
 
 # --- Reminder function ---
 def send_return_reminders():
-    
     today_ph = datetime.now(PH_TZ).date()
     tomorrow_ph = today_ph + timedelta(days=1)
 
     borrowings = Borrowing.query.filter(
-        func.date(Borrowing.return_date) == tomorrow_ph,
+        db.func.date(Borrowing.return_date) == tomorrow_ph,
         Borrowing.status == 'Approved'
     ).all()
 
     print(f"Checking reminders for {tomorrow_ph} — found {len(borrowings)} items")
 
     for b in borrowings:
-        resident = b.resident
-        # Example SMS/notification logic here
-        print(f"Sending reminder to {resident.name} for {b.asset_name}")
+        if b.resident and getattr(b.resident, 'phone_number', None):
+            message = f"📢 Reminder: Please return {b.asset_name} tomorrow ({b.return_date}). Thank you!"
+            print(f"Sending reminder to {b.resident.name} ({b.resident.phone_number})")
+            # send_sms(b.resident.phone_number, message)
+        else:
+            print(f"⚠️ No phone number found for {b.resident.name if b.resident else 'Unknown'}")
 
     db.session.commit()
-    print("Reminders sent successfully!")
+    print("✅ Reminders sent successfully!")
 
 
 # --- Run reminders manually via route ---
@@ -321,18 +327,17 @@ def run_reminders():
     return jsonify({"message": "Reminders sent manually"}), 200
 
 
-# --- Scheduler: runs automatically every 3 hours ---
-def start_scheduler():
-    scheduler = BackgroundScheduler(timezone='Asia/Manila')
-    scheduler.add_job(send_return_reminders, 'interval', hours=3)
-    scheduler.start()
+# --- Schedule reminders every 3 hours ---
+def schedule_reminders():
+    send_return_reminders()
+    Timer(3 * 60 * 60, schedule_reminders).start()  # Run again in 3 hours
     print("🔁 Reminder scheduler started (every 3 hours)")
 
 
-# --- Start scheduler when Flask app runs ---
+# --- Start once when Flask runs ---
 with app.app_context():
-    start_scheduler()
-    send_return_reminders()
+    send_return_reminders()  # Run immediately
+    schedule_reminders()     # Then every 3 hours
 
 
 @app.route('/dashboard')
