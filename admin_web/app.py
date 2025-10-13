@@ -149,8 +149,6 @@ def admin_required(f):
 
 PH_TZ = pytz.timezone('Asia/Manila')
 
-PH_TZ = pytz.timezone('Asia/Manila')
-
 def send_return_reminders():
     today_ph = datetime.now(PH_TZ).date()
     tomorrow_ph = today_ph + timedelta(days=1)
@@ -160,16 +158,17 @@ def send_return_reminders():
         Borrowing.status == 'Approved'
     ).all()
 
-    print(f"📅 Checking reminders for: {tomorrow_ph} — Found: {len(borrowings)} borrowings")
+    print(f"Checking reminders for: {tomorrow_ph}, found: {len(borrowings)}")
 
     for b in borrowings:
-        resident = b.resident
-        if resident and resident.phone_number:
-            message = f"📢 Reminder: Please return '{b.item}' tomorrow ({b.return_date}) to the Barangay Hall. Thank you!"
-            send_sms(resident.phone_number, message)
+        resident = Resident.query.filter_by(full_name=b.resident_name).first()
+        if resident:
+            send_sms(
+                resident.phone_number,
+                f"Reminder: Please return {b.item} tomorrow ({b.return_date})."
+            )
 
 
-# Scheduler: runs daily at 8 AM PH time
 # Scheduler: runs every 2 hours (PH time)
 scheduler = BackgroundScheduler(timezone=PH_TZ)
 scheduler.add_job(send_return_reminders, 'interval', hours=2)
@@ -249,7 +248,6 @@ class Reservation(db.Model):
 class Borrowing(db.Model):
     __tablename__ = 'borrowings'
     id = db.Column(db.Integer, primary_key=True)
-    resident_id = db.Column(db.Integer, db.ForeignKey('residents.id'), nullable=False)  # ✅ Add this
     resident_name = db.Column(db.String(255), nullable=False)
     item = db.Column(db.String(255), nullable=False)
     quantity = db.Column(db.Integer, nullable=False)
@@ -261,8 +259,6 @@ class Borrowing(db.Model):
     rejection_reason = db.Column(db.String(255), nullable=True)
     asset_id = db.Column(db.Integer, db.ForeignKey('assets.id'), nullable=False)
 
-    # ✅ Relationship to Resident
-    resident = db.relationship('Resident', backref='borrowings', lazy=True)
 
 
 
