@@ -147,6 +147,34 @@ def admin_required(f):
         return f(*args, **kwargs)
     return decorated_function
 
+PH_TZ = pytz.timezone('Asia/Manila')
+
+def send_return_reminders():
+    today_ph = datetime.now(PH_TZ).date()
+    tomorrow_ph = today_ph + timedelta(days=1)
+
+    borrowings = Borrowing.query.filter(
+        func.date(Borrowing.return_date) == tomorrow_ph,
+        Borrowing.status == 'Approved'
+    ).all()
+
+    print("Checking reminders for:", tomorrow_ph, "found:", len(borrowings))
+
+    for b in borrowings:
+        resident = b.resident
+        if resident:
+            send_sms(
+                resident.phone_number,
+                f"Reminder: Please return {b.item} tomorrow ({b.return_date})."
+            )
+
+# Scheduler: runs daily at 8 AM PH time
+scheduler = BackgroundScheduler(timezone=PH_TZ)
+scheduler.add_job(send_return_reminders, 'cron', hour=8)
+scheduler.start()
+
+def allowed_file(filename):
+    return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
 
 def allowed_file(filename):
     return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
@@ -230,9 +258,7 @@ class Borrowing(db.Model):
 
     asset_id = db.Column(db.Integer, db.ForeignKey('assets.id'), nullable=False)
 
-    # ✅ Link to Resident
-    resident_id = db.Column(db.Integer, db.ForeignKey('residents.id'), nullable=True)
-    resident = db.relationship('Resident', backref='borrowings')
+
 
 
 
@@ -294,50 +320,7 @@ def login():
     return render_template('login.html')
 
 
-PH_TZ = pytz.timezone('Asia/Manila')
 
-# --- Reminder function ---
-def send_return_reminders():
-    today_ph = datetime.now(PH_TZ).date()
-    tomorrow_ph = today_ph + timedelta(days=1)
-
-    borrowings = Borrowing.query.filter(
-        db.func.date(Borrowing.return_date) == tomorrow_ph,
-        Borrowing.status == 'Approved'
-    ).all()
-
-    print(f"Checking reminders for {tomorrow_ph} — found {len(borrowings)} items")
-
-    for b in borrowings:
-        if b.resident and getattr(b.resident, 'phone_number', None):
-            message = f"📢 Reminder: Please return {b.asset_name} tomorrow ({b.return_date}). Thank you!"
-            print(f"Sending reminder to {b.resident.name} ({b.resident.phone_number})")
-            # send_sms(b.resident.phone_number, message)
-        else:
-            print(f"⚠️ No phone number found for {b.resident.name if b.resident else 'Unknown'}")
-
-    db.session.commit()
-    print("✅ Reminders sent successfully!")
-
-
-# --- Run reminders manually via route ---
-@app.route('/run_reminders', methods=['GET'])
-def run_reminders():
-    send_return_reminders()
-    return jsonify({"message": "Reminders sent manually"}), 200
-
-
-# --- Schedule reminders every 3 hours ---
-def schedule_reminders():
-    send_return_reminders()
-    Timer(3 * 60 * 60, schedule_reminders).start()  # Run again in 3 hours
-    print("🔁 Reminder scheduler started (every 3 hours)")
-
-
-# --- Start once when Flask runs ---
-with app.app_context():
-    send_return_reminders()  # Run immediately
-    schedule_reminders()     # Then every 3 hours
 
 
 @app.route('/dashboard')
