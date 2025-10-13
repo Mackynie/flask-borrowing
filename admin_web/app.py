@@ -147,49 +147,6 @@ def admin_required(f):
         return f(*args, **kwargs)
     return decorated_function
 
-PH_TZ = pytz.timezone('Asia/Manila')
-
-# --- Reminder function ---
-def send_return_reminders():
-    
-    today_ph = datetime.now(PH_TZ).date()
-    tomorrow_ph = today_ph + timedelta(days=1)
-
-    borrowings = Borrowing.query.filter(
-        func.date(Borrowing.return_date) == tomorrow_ph,
-        Borrowing.status == 'Approved'
-    ).all()
-
-    print(f"Checking reminders for {tomorrow_ph} — found {len(borrowings)} items")
-
-    for b in borrowings:
-        resident = b.resident
-        # Example SMS/notification logic here
-        print(f"Sending reminder to {resident.name} for {b.asset_name}")
-
-    db.session.commit()
-    print("Reminders sent successfully!")
-
-
-# --- Run reminders manually via route ---
-@app.route('/run_reminders', methods=['GET'])
-def run_reminders():
-    send_return_reminders()
-    return jsonify({"message": "Reminders sent manually"}), 200
-
-
-# --- Scheduler: runs automatically every 3 hours ---
-def start_scheduler():
-    scheduler = BackgroundScheduler(timezone='Asia/Manila')
-    scheduler.add_job(send_return_reminders, 'interval', hours=3)
-    scheduler.start()
-    print("🔁 Reminder scheduler started (every 3 hours)")
-
-
-# --- Start scheduler when Flask app runs ---
-with app.app_context():
-    start_scheduler()
-    send_return_reminders()
 
 def allowed_file(filename):
     return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
@@ -332,6 +289,50 @@ def login():
 
     return render_template('login.html')
 
+
+PH_TZ = pytz.timezone('Asia/Manila')
+
+# --- Reminder function ---
+def send_return_reminders():
+    
+    today_ph = datetime.now(PH_TZ).date()
+    tomorrow_ph = today_ph + timedelta(days=1)
+
+    borrowings = Borrowing.query.filter(
+        func.date(Borrowing.return_date) == tomorrow_ph,
+        Borrowing.status == 'Approved'
+    ).all()
+
+    print(f"Checking reminders for {tomorrow_ph} — found {len(borrowings)} items")
+
+    for b in borrowings:
+        resident = b.resident
+        # Example SMS/notification logic here
+        print(f"Sending reminder to {resident.name} for {b.asset_name}")
+
+    db.session.commit()
+    print("Reminders sent successfully!")
+
+
+# --- Run reminders manually via route ---
+@app.route('/run_reminders', methods=['GET'])
+def run_reminders():
+    send_return_reminders()
+    return jsonify({"message": "Reminders sent manually"}), 200
+
+
+# --- Scheduler: runs automatically every 3 hours ---
+def start_scheduler():
+    scheduler = BackgroundScheduler(timezone='Asia/Manila')
+    scheduler.add_job(send_return_reminders, 'interval', hours=3)
+    scheduler.start()
+    print("🔁 Reminder scheduler started (every 3 hours)")
+
+
+# --- Start scheduler when Flask app runs ---
+with app.app_context():
+    start_scheduler()
+    send_return_reminders()
 
 
 @app.route('/dashboard')
