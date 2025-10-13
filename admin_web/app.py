@@ -296,9 +296,10 @@ def send_return_reminders():
         resident = Resident.query.filter_by(full_name=b.resident_name).first()
         if resident and resident.phone_number:
             message = (
-                f"Hi {resident.full_name}, reminder: Please return "
-                f"{b.item} tomorrow ({b.return_date}). Thank you!"
+                f"Hi {resident.full_name}, this is a reminder to please return "
+                f"the {b.item} by {b.return_date}. Thank you!"
             )
+
             send_sms(resident.phone_number, message)
             print(f"✅ Reminder sent to {resident.full_name}")
         else:
