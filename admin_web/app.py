@@ -161,12 +161,18 @@ def send_return_reminders():
     print(f"Checking reminders for: {tomorrow_ph}, found: {len(borrowings)}")
 
     for b in borrowings:
+        # Match resident by name
         resident = Resident.query.filter_by(full_name=b.resident_name).first()
-        if resident:
-            send_sms(
-                resident.phone_number,
-                f"Reminder: Please return {b.item} tomorrow ({b.return_date})."
+        if resident and resident.phone_number:
+            message = (
+                f"Hi {resident.full_name}, reminder: Please return "
+                f"{b.item} tomorrow ({b.return_date}). Thank you!"
             )
+            send_sms(resident.phone_number, message)
+            print(f"✅ Reminder sent to {resident.full_name}")
+        else:
+            print(f"⚠️ Resident not found or missing phone number for {b.resident_name}")
+
 
 
 # Scheduler: runs every 2 hours (PH time)
