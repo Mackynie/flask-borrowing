@@ -1191,11 +1191,23 @@ def reset_password():
     if username not in otp_store or not otp_store[username].get('verified'):
         return jsonify({"error": "OTP verification required"}), 403
 
+    # ✅ Password strength validation (same as registration)
+    if len(new_password) < 8:
+        return jsonify({"error": "Password must be at least 8 characters long"}), 400
+    if not re.search(r"[A-Z]", new_password):
+        return jsonify({"error": "Password must contain at least one uppercase letter"}), 400
+    if not re.search(r"[a-z]", new_password):
+        return jsonify({"error": "Password must contain at least one lowercase letter"}), 400
+    if not re.search(r"\d", new_password):
+        return jsonify({"error": "Password must contain at least one number"}), 400
+    if not re.search(r"[!@#$%^&*(),.?\":{}|<>]", new_password):
+        return jsonify({"error": "Password must contain at least one special character"}), 400
+
+    # ✅ Update password securely
     user = Resident.query.filter_by(username=username).first()
     if not user:
         return jsonify({"error": "User not found"}), 404
 
-    # ✅ Update password securely
     user.password = generate_password_hash(new_password, method='pbkdf2:sha256')
     db.session.commit()
 
