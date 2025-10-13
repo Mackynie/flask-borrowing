@@ -8,3 +8,5 @@ werkzeug
 flask-cors
 python-dotenv
 pytz
+cryptography
+
