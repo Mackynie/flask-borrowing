@@ -147,41 +147,7 @@ def admin_required(f):
         return f(*args, **kwargs)
     return decorated_function
 
-PH_TZ = pytz.timezone('Asia/Manila')
 
-def send_return_reminders():
-    today_ph = datetime.now(PH_TZ).date()
-    tomorrow_ph = today_ph + timedelta(days=1)
-
-    borrowings = Borrowing.query.filter(
-        func.date(Borrowing.return_date) == tomorrow_ph,
-        Borrowing.status == 'Approved'
-    ).all()
-
-    print(f"Checking reminders for: {tomorrow_ph}, found: {len(borrowings)}")
-
-    for b in borrowings:
-        # Match resident by name
-        resident = Resident.query.filter_by(full_name=b.resident_name).first()
-        if resident and resident.phone_number:
-            message = (
-                f"Hi {resident.full_name}, reminder: Please return "
-                f"{b.item} tomorrow ({b.return_date}). Thank you!"
-            )
-            send_sms(resident.phone_number, message)
-            print(f"✅ Reminder sent to {resident.full_name}")
-        else:
-            print(f"⚠️ Resident not found or missing phone number for {b.resident_name}")
-
-
-
-# Scheduler: runs every 2 hours (PH time)
-scheduler = BackgroundScheduler(timezone=PH_TZ)
-scheduler.add_job(send_return_reminders, 'interval', hours=2)
-scheduler.start()
-
-with app.app_context():
-    send_return_reminders()
 
 
 def allowed_file(filename):
@@ -311,6 +277,42 @@ def restrict_overdue_accounts():
 @app.route('/')
 def home():
     return redirect(url_for('login'))
+
+PH_TZ = pytz.timezone('Asia/Manila')
+
+def send_return_reminders():
+    today_ph = datetime.now(PH_TZ).date()
+    tomorrow_ph = today_ph + timedelta(days=1)
+
+    borrowings = Borrowing.query.filter(
+        func.date(Borrowing.return_date) == tomorrow_ph,
+        Borrowing.status == 'Approved'
+    ).all()
+
+    print(f"Checking reminders for: {tomorrow_ph}, found: {len(borrowings)}")
+
+    for b in borrowings:
+        # Match resident by name
+        resident = Resident.query.filter_by(full_name=b.resident_name).first()
+        if resident and resident.phone_number:
+            message = (
+                f"Hi {resident.full_name}, reminder: Please return "
+                f"{b.item} tomorrow ({b.return_date}). Thank you!"
+            )
+            send_sms(resident.phone_number, message)
+            print(f"✅ Reminder sent to {resident.full_name}")
+        else:
+            print(f"⚠️ Resident not found or missing phone number for {b.resident_name}")
+
+
+
+# Scheduler: runs every 2 hours (PH time)
+scheduler = BackgroundScheduler(timezone=PH_TZ)
+scheduler.add_job(send_return_reminders, 'interval', hours=2)
+scheduler.start()
+
+with app.app_context():
+    send_return_reminders()
 
 @app.route('/login', methods=['GET', 'POST'])
 def login():
