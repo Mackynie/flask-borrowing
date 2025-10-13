@@ -170,9 +170,11 @@ def send_return_reminders():
 
 
 # Scheduler: runs daily at 8 AM PH time
+# Scheduler: runs every 2 hours (PH time)
 scheduler = BackgroundScheduler(timezone=PH_TZ)
-scheduler.add_job(send_return_reminders, 'cron', hour=8)
+scheduler.add_job(send_return_reminders, 'interval', hours=2)
 scheduler.start()
+
 
 def allowed_file(filename):
     return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
