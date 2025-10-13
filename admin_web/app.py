@@ -236,6 +236,7 @@ class Borrowing(db.Model):
     status = db.Column(db.Enum('Pending', 'Approved', 'Rejected', 'Returned', 'Return Requested'), default='Pending')
     rejection_reason = db.Column(db.String(255), nullable=True)
     asset_id = db.Column(db.Integer, db.ForeignKey('assets.id'), nullable=False)
+    reminder_sent = db.Column(db.Boolean, default=False)
 
 
 
@@ -287,9 +288,11 @@ def send_return_reminders():
     today_ph = datetime.now(PH_TZ).date()
     tomorrow_ph = today_ph + timedelta(days=1)
 
+    # Only get borrowings that are approved, due tomorrow, and haven't been reminded yet
     borrowings = Borrowing.query.filter(
         func.date(Borrowing.return_date) == tomorrow_ph,
-        Borrowing.status == 'Approved'
+        Borrowing.status == 'Approved',
+        Borrowing.reminder_sent == False  # ensures we don't send duplicate reminders
     ).all()
 
     print(f"Checking reminders for: {tomorrow_ph}, found: {len(borrowings)}")
@@ -305,8 +308,13 @@ def send_return_reminders():
 
             send_sms(resident.phone_number, message)
             print(f"✅ Reminder sent to {resident.full_name}")
+
+            # Mark as reminded
+            b.reminder_sent = True
+            db.session.commit()
         else:
             print(f"⚠️ Resident not found or missing phone number for {b.resident_name}")
+
 
 
 
