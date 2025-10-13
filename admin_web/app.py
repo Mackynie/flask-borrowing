@@ -14,7 +14,8 @@ from functools import wraps
 from flask_cors import CORS
 import base64
 import pytz
-
+import random
+import string
 
 
 
@@ -22,6 +23,8 @@ import pytz
 # Required for PyMySQL to work with SQLAlchemy
 pymysql.install_as_MySQLdb()
 
+
+otp_store = {} 
 
 app = Flask(__name__)
 CORS(app)
@@ -1123,23 +1126,82 @@ def borrowings_page():
 
 
 
+@app.route('/api/request_reset_otp', methods=['POST'])
+def request_reset_otp():
+    data = request.get_json()
+    if not data or 'username' not in data:
+        return jsonify({"error": "Username required"}), 400
+
+    username = data['username'].strip()
+    user = Resident.query.filter_by(username=username).first()
+
+    if not user:
+        return jsonify({"error": "User not found"}), 404
+    if not user.phone_number:
+        return jsonify({"error": "No phone number associated"}), 400
+
+    # ✅ Generate 6-digit OTP
+    otp = ''.join(random.choices(string.digits, k=6))
+    otp_store[username] = {'otp': otp, 'expires': time.time() + 300}  # expires in 5 mins
+
+    # ✅ Send OTP via TextBee
+    message = f"Your BARMA password reset code is: {otp}. It will expire in 5 minutes."
+    send_sms(user.phone_number, message)
+
+    return jsonify({"message": "OTP sent successfully"}), 200
+
+
+@app.route('/api/verify_reset_otp', methods=['POST'])
+def verify_reset_otp():
+    data = request.get_json()
+    if not data or 'username' not in data or 'otp' not in data:
+        return jsonify({"error": "Invalid request"}), 400
+
+    username = data['username'].strip()
+    otp = data['otp'].strip()
+
+    if username not in otp_store:
+        return jsonify({"error": "No OTP request found"}), 400
+
+    stored = otp_store[username]
+    if time.time() > stored['expires']:
+        otp_store.pop(username, None)
+        return jsonify({"error": "OTP expired"}), 400
+
+    if stored['otp'] != otp:
+        return jsonify({"error": "Invalid OTP"}), 400
+
+    # ✅ Mark verified, allow password reset
+    otp_store[username]['verified'] = True
+    return jsonify({"message": "OTP verified"}), 200
+
+
 @app.route('/api/reset_password', methods=['POST'])
 def reset_password():
     data = request.get_json()
     if not data or 'username' not in data or 'new_password' not in data:
-        return jsonify({"error": "Invalid request data"}), 400
+        return jsonify({"error": "Invalid request"}), 400
 
-    username = data['username']
-    new_password = data['new_password']
+    username = data['username'].strip()
+    new_password = data['new_password'].strip()
+
+    # ✅ Ensure OTP verified
+    if username not in otp_store or not otp_store[username].get('verified'):
+        return jsonify({"error": "OTP verification required"}), 403
 
     user = Resident.query.filter_by(username=username).first()
-    if user:
-        user.password = generate_password_hash(new_password)
-  # replace with actual hash function
-        db.session.commit()
-        return jsonify({"message": "Password reset successful"}), 200
-    else:
+    if not user:
         return jsonify({"error": "User not found"}), 404
+
+    # ✅ Update password securely
+    user.password = generate_password_hash(new_password, method='pbkdf2:sha256')
+    db.session.commit()
+
+    # ✅ Clean up OTP
+    otp_store.pop(username, None)
+
+    return jsonify({"message": "Password reset successful"}), 200
+
 
 
 @app.route('/api/user-id/<name>', methods=['GET'])
