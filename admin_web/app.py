@@ -646,26 +646,28 @@ def generate_residents_report():
     response.headers["Content-Type"] = "text/csv"
     return response
 
-
 @app.route('/history')
 def history_page():
     if not session.get('admin'):
         return redirect(url_for('login'))
 
-    # Separate query for restriction logs
+    # Restriction logs
     restriction_logs = History.query.filter_by(type='Account Restriction')\
                                    .order_by(History.action_date.desc())\
                                    .all()
 
-    # Other history logs (reservations and borrowings)
+    # Other history logs
     other_logs = History.query.filter(History.type != 'Account Restriction')\
                               .order_by(History.action_date.desc())\
                               .all()
 
-    # Restriction summary: count how many times each resident was restricted
-    restriction_summary = Counter([r.resident_name for r in restriction_logs])
+    # Summary: count only actual restriction actions
+    restriction_summary = Counter([
+        r.resident_name
+        for r in restriction_logs
+        if r.action_type in ['Automatically Restricted', 'Manually Restricted']
+    ])
 
-    # Get admin info
     admin = Admin.query.get(session['admin_id'])
 
     return render_template(
@@ -675,7 +677,6 @@ def history_page():
         restriction_summary=restriction_summary,
         username=admin.full_name
     )
-
 
 
 
