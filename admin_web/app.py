@@ -1823,7 +1823,6 @@ def admin_account():
     
     if request.method == 'POST':
         admin.full_name = request.form['full_name']
-        admin.email = request.form['email']
         password = request.form['password']
         if password:
             admin.password_hash = generate_password_hash(password)
@@ -1840,11 +1839,8 @@ def admin_account():
         flash('Account updated successfully!', 'success')
         return redirect(url_for('admin_account'))
 
-    # Get the last 5 activities
-    activities = AdminActivity.query.filter_by(admin_id=admin.id)\
-        .order_by(AdminActivity.timestamp.desc()).limit(5).all()
+    return render_template('admin_account.html', admin=admin)
 
-    return render_template('admin_account.html', admin=admin, activities=activities)
 
 
 
