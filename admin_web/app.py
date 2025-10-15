@@ -17,6 +17,7 @@ import pytz
 import random
 import string
 import time
+from collections import Counter
 
 
 
@@ -653,14 +654,20 @@ def history_page():
 
     # Separate query for restriction logs
     restriction_logs = History.query.filter_by(type='Account Restriction').order_by(History.action_date.desc()).all()
+    
     # Other history logs (reservations and borrowings)
     other_logs = History.query.filter(History.type != 'Account Restriction').order_by(History.action_date.desc()).all()
 
+    # Restriction summary: count how many times each resident was restricted
+    restriction_summary = Counter([r.resident_name for r in restriction_logs])
+
     admin = Admin.query.get(session['admin_id'])
+    
     return render_template(
         'history.html',
         restriction_logs=restriction_logs,
         other_logs=other_logs,
+        restriction_summary=restriction_summary,
         username=admin.full_name
     )
 
