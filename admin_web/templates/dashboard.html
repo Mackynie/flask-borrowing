@@ -104,15 +104,7 @@
               <tr>
                 <td>{{ a.name }}</td>
                 <td>{{ a.quantity }}</td>
-                <td>
-                  {% if available <= 0 %}
-                    <span class="badge bg-danger">0</span>
-                  {% elif available < 3 %}
-                    <span class="badge bg-warning text-dark">{{ available }}</span>
-                  {% else %}
-                    {{ available }}
-                  {% endif %}
-                </td>
+                <td>{{ available }}</td>
                 <td>{{ approved_borrowed }}</td>
               </tr>
               {% endfor %}
