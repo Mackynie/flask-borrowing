@@ -1682,6 +1682,41 @@ def get_reservations_for_asset_and_date(asset_id, date):
     except Exception as e:
         return jsonify({'error': str(e)}), 400
 
+@app.route('/edit_resident/<int:id>', methods=['POST'])
+def edit_resident(id):
+    resident = Resident.query.get_or_404(id)
+
+    full_name = request.form.get('full_name').strip()
+    username = request.form.get('username').strip()
+    phone_number = request.form.get('phone_number').strip()
+    purok = request.form.get('purok').strip()
+
+    # Basic validation
+    if not full_name or not username or not phone_number or not purok:
+        flash('All fields are required.', 'danger')
+        return redirect(url_for('manage_accounts'))
+
+    # Optional: check if username is already used by another resident
+    existing_user = Resident.query.filter(Resident.username == username, Resident.id != id).first()
+    if existing_user:
+        flash('Username already taken.', 'danger')
+        return redirect(url_for('manage_accounts'))
+
+    # Update the resident
+    resident.full_name = full_name
+    resident.username = username
+    resident.phone_number = phone_number
+    resident.purok = purok
+
+    try:
+        db.session.commit()
+        flash('Resident details updated successfully.', 'success')
+    except Exception as e:
+        db.session.rollback()
+        flash('Error updating resident: ' + str(e), 'danger')
+
+    return redirect(url_for('manage_accounts'))
+
 
 if __name__ == '__main__':
     app.run(host="0.0.0.0", port=5000, debug=True)
