@@ -196,12 +196,12 @@ class Resident(db.Model):
 class AdminActivity(db.Model):
     __tablename__ = "AdminActivity"
 
-    id = db.Column(db.Integer, primary_key=True)
-    admin_id = db.Column(db.Integer, db.ForeignKey('admins.id'), nullable=False)  # <-- add this
+    id = db.Column(db.Integer, primary_key=True, autoincrement=True)
+    admin_id = db.Column(db.Integer, db.ForeignKey('admins.id'), nullable=False)
     action = db.Column(db.Text, nullable=False)
     timestamp = db.Column(db.DateTime, default=datetime.utcnow)
 
-    admin = db.relationship('Admin', backref='activities')  # optional but useful
+    admin = db.relationship('Admin', backref='activities')
 
 
 
