@@ -253,7 +253,7 @@ class History(db.Model):
     action_date = db.Column(db.DateTime, default=datetime.utcnow)
     borrow_date = db.Column(db.DateTime, nullable=True)  # ✅ changed to DateTime
     return_date = db.Column(db.DateTime, nullable=True)  # ✅ changed to DateTime
-    reason = db.Column(db.String(255), nullable=True)
+    reason = db.Column(db.Text, nullable=True)
 
 
 def restrict_overdue_accounts():
