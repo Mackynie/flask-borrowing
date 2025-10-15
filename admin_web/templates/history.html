@@ -96,19 +96,7 @@
           </div>
         </div>
       
-        <!-- Right: Type Buttons + Export/Print -->
-        <div class="d-flex gap-2 mt-2 mt-md-0">
-          <div class="btn-group">
-            <button class="btn btn-sm text-white" style="background-color: #a10b0b;" onclick="filterByType('Borrowing')">
-              <i class="bi bi-arrow-left-right me-1"></i> Borrowing
-            </button>
-            <button class="btn btn-sm text-white" style="background-color: #FF8A08;" onclick="filterByType('Reservation')">
-              <i class="bi bi-calendar-check me-1"></i> Reservation
-            </button>
-            <button class="btn btn-sm text-dark" style="background-color: #FFC100;" onclick="filterByType('')">
-              <i class="bi bi-list-ul me-1"></i> Show All
-            </button>
-          </div>
+       
           <div class="btn-group">
             <button class="btn btn-sm text-white" style="background-color: #b30000;" onclick="exportFilteredToPDF()">
               <i class="bi bi-filetype-pdf me-1"></i> Export PDF
@@ -139,6 +127,18 @@
       <!-- Borrowings & Reservations Tab -->
       <div class="tab-pane fade show active" id="logs" role="tabpanel">
         <div class="card shadow-sm mb-4" data-aos="fade-up">
+          <!-- Left: Borrowing / Reservation / Show All -->
+          <div class="btn-group">
+            <button class="btn btn-sm text-white" style="background-color: #a10b0b;" onclick="filterByType('Borrowing')">
+              <i class="bi bi-arrow-left-right me-1"></i> Borrowing
+            </button>
+            <button class="btn btn-sm text-white" style="background-color: #FF8A08;" onclick="filterByType('Reservation')">
+              <i class="bi bi-calendar-check me-1"></i> Reservation
+            </button>
+            <button class="btn btn-sm text-dark" style="background-color: #FFC100;" onclick="filterByType('')">
+              <i class="bi bi-list-ul me-1"></i> Show All
+            </button>
+          </div>
           <div class="card-body">
             <div class="table-responsive" id="exportSection">
               <table id="historyTable" class="table table-hover table-bordered align-middle">
