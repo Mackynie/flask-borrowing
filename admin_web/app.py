@@ -659,30 +659,10 @@ def return_borrowing(borrowing_id):
 @admin_required
 def assets_page():
     admin = Admin.query.get(session['admin_id'])
-    assets = Asset.query.all()
-    asset_data = []
+    assets = Asset.query.filter_by(classification='Borrowing').all()  # only borrowing type
+    borrowings = Borrowing.query.all()
 
-    for asset in assets:
-        total_quantity = asset.quantity or 0
-        approved_borrowed = db.session.query(db.func.sum(Borrowing.quantity)).filter(
-            Borrowing.asset_id == asset.id,
-            Borrowing.status == 'Approved'
-        ).scalar() or 0
-
-        available_quantity = total_quantity - approved_borrowed
-        if available_quantity < 0:
-            available_quantity = 0
-
-        asset_data.append({
-            'id': asset.id,
-            'name': asset.name,
-            'quantity': total_quantity,
-            'available_quantity': available_quantity,
-            'active_borrowed': approved_borrowed,
-            'classification': asset.classification
-        })
-
-    return render_template('assets.html', assets=asset_data, admin_name=admin.full_name)
+    return render_template('assets.html', assets=assets, borrowings=borrowings, admin_name=admin.full_name)
 
 
 @app.route('/help')
