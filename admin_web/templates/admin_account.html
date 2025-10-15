@@ -133,33 +133,47 @@
 
         <!-- Collapsible Update Form -->
         <div class="collapse mt-3" id="updateForm">
-          <form method="POST" action="{{ url_for('admin_account') }}">
-            <div class="mb-3">
-              <label class="form-label">Full Name</label>
-              <input type="text" class="form-control" name="full_name" value="{{ admin.full_name }}" required>
-            </div>
-            <div class="mb-3">
-              <label class="form-label">Username</label>
-              <input type="text" class="form-control" name="username" value="{{ admin.username }}" required>
-            </div>
-            <div class="mb-3">
-              <label class="form-label">Position</label>
-              <select class="form-select" name="position" required>
-                <option value="Chairman" {% if admin.position == 'Chairman' %}selected{% endif %}>Chairman</option>
-                <option value="Secretary" {% if admin.position == 'Secretary' %}selected{% endif %}>Secretary</option>
-              </select>
-            </div>
-            <div class="mb-3">
-              <label class="form-label">Change Password</label>
-              <input type="password" class="form-control" name="password" placeholder="Leave blank to keep current password">
-              <small class="text-muted">
-                Password must be at least 8 characters and include uppercase, lowercase, number, and special character.
-              </small>
-            </div>
-            <div class="text-center mt-3">
-              <button type="submit" class="btn btn-custom btn-lg px-5">Save Changes</button>
-            </div>
-          </form>
+          <div class="col-md-6 mx-auto">
+            <!-- Flash Messages -->
+            {% with messages = get_flashed_messages(with_categories=true) %}
+              {% if messages %}
+                {% for category, message in messages %}
+                  <div class="alert alert-{{ category }} alert-dismissible fade show" role="alert">
+                    {{ message }}
+                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                  </div>
+                {% endfor %}
+              {% endif %}
+            {% endwith %}
+
+            <form method="POST" action="{{ url_for('admin_account') }}">
+              <div class="mb-3">
+                <label class="form-label">Full Name</label>
+                <input type="text" class="form-control" name="full_name" value="{{ admin.full_name }}" required>
+              </div>
+              <div class="mb-3">
+                <label class="form-label">Username</label>
+                <input type="text" class="form-control" name="username" value="{{ admin.username }}" required>
+              </div>
+              <div class="mb-3">
+                <label class="form-label">Position</label>
+                <select class="form-select" name="position" required>
+                  <option value="Chairman" {% if admin.position == 'Chairman' %}selected{% endif %}>Chairman</option>
+                  <option value="Secretary" {% if admin.position == 'Secretary' %}selected{% endif %}>Secretary</option>
+                </select>
+              </div>
+              <div class="mb-3">
+                <label class="form-label">Change Password</label>
+                <input type="password" class="form-control" name="password" placeholder="Leave blank to keep current password">
+                <small class="text-muted">
+                  Password must be at least 8 characters and include uppercase, lowercase, number, and special character.
+                </small>
+              </div>
+              <div class="text-center mt-3">
+                <button type="submit" class="btn btn-custom btn-lg px-5">Save Changes</button>
+              </div>
+            </form>
+          </div>
         </div>
       </div>
 
