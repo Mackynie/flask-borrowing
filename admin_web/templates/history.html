@@ -25,7 +25,6 @@
     .badge-rejected { background-color: #dc3545; color: white; }
     .badge-returned { background-color: #0d6efd; color: white; }
 
-
     .export-only { display: none; }
     .screen-only { display: block; }
 
@@ -56,7 +55,6 @@
         <li class="nav-item"><a class="nav-link" href="{{ url_for('dashboard') }}"><i class="bi bi-speedometer2 me-2"></i>Dashboard</a></li>
         <li class="nav-item"><a class="nav-link" href="{{ url_for('assets_page') }}"><i class="bi bi-box-seam me-2"></i>Assets</a></li>
         <li class="nav-item"><a class="nav-link" href="{{ url_for('reservations_page') }}"><i class="bi bi-calendar-check me-2"></i>Reservations</a></li>
-        <li class="nav-item"><a class="nav-link" href="{{ url_for('borrowings_page') }}"><i class="bi bi-arrow-left-right me-2"></i>Borrowing</a></li>
         <li class="nav-item"><a class="nav-link" href="{{ url_for('manage_accounts') }}"><i class="bi bi-people-fill me-2"></i>Accounts</a></li>
         <li class="nav-item"><a class="nav-link active" href="{{ url_for('history_page') }}"><i class="bi bi-clock-history me-2"></i>History</a></li>
         <li class="nav-item">
@@ -121,8 +119,10 @@
                   <th>Item</th>
                   <th>Quantity</th>
                   <th>Purpose</th>
-                  <th>Date</th>
+                  <th>Borrow Date</th>
+                  <th>Return Date</th>
                   <th>Status</th>
+                  <th>Reason</th>
                 </tr>
               </thead>
               <tbody>
@@ -133,11 +133,23 @@
                   <td>{{ h.item }}</td>
                   <td>{{ h.quantity or 'N/A' }}</td>
                   <td>{{ h.purpose or 'N/A' }}</td>
-                  <td>{{ h.action_date.strftime('%Y-%m-%d %H:%M') }}</td>
-                  <td>{{ h.action_type }}</td>
+                  <td>{{ h.borrow_date.strftime('%Y-%m-%d') if h.borrow_date else 'N/A' }}</td>
+                  <td>{{ h.return_date.strftime('%Y-%m-%d') if h.return_date else 'N/A' }}</td>
+                  <td>
+                    {% if h.action_type == 'Approved' %}
+                      <span class="badge badge-approved">Approved</span>
+                    {% elif h.action_type == 'Rejected' %}
+                      <span class="badge badge-rejected">Rejected</span>
+                    {% elif h.action_type == 'Returned' %}
+                      <span class="badge badge-returned">Returned</span>
+                    {% else %}
+                      <span class="badge bg-secondary">Unknown</span>
+                    {% endif %}
+                  </td>
+                  <td>{{ h.reason or 'N/A' }}</td>
                 </tr>
                 {% else %}
-                <tr><td colspan="7" class="text-center text-muted">No history records available.</td></tr>
+                <tr><td colspan="9" class="text-center text-muted">No history records available.</td></tr>
                 {% endfor %}
               </tbody>
             </table>
@@ -168,36 +180,35 @@ function applyFilters() {
   const { search, date, status, type } = getFilterInfo();
   const searchTerm = search.toLowerCase();
   const rows = document.querySelectorAll('#historyTable tbody tr');
+  let visibleCount = 0;
 
   rows.forEach(row => {
     const cells = row.querySelectorAll('td');
     const rowText = row.textContent.toLowerCase();
     const rowDate = cells[5]?.textContent.trim().split(' ')[0];
-    const rowStatus = cells[6]?.textContent.trim();
+    const rowStatus = cells[7]?.textContent.trim();
     const rowType = cells[0]?.textContent.trim();
 
     const matchesSearch = search === 'All' || rowText.includes(searchTerm);
     const matchesDate = date === 'All' || rowDate === date;
-    const matchesStatus = status === 'All' || rowStatus === status;
+    const matchesStatus = status === 'All' || rowStatus.includes(status);
     const matchesType = type === 'All' || rowType === type;
 
     const visible = matchesSearch && matchesDate && matchesStatus && matchesType;
     row.style.display = visible ? '' : 'none';
     row.classList.toggle('export-visible', visible);
+    if (visible) visibleCount++;
   });
 }
 
 function filterByType(type) {
-  currentTypeFilter = type; // set the type filter
-  applyFilters();           // re-apply all filters together
+  currentTypeFilter = type;
+  applyFilters();
 }
 
-// hook up all events
 document.getElementById('searchInput').addEventListener('input', applyFilters);
 document.getElementById('dateFilter').addEventListener('change', applyFilters);
 document.getElementById('statusFilter').addEventListener('change', applyFilters);
-
-// initial render
 applyFilters();
 
 async function toBase64(url) {
@@ -216,8 +227,8 @@ async function buildExportHeader() {
 
   return `
     <div style="position: relative; text-align: center; margin-bottom: 8px; height: 100px;">
-      <img src="${pob5Logo}" style="position: absolute; left: 0; top: 40%; transform: translateY(-50%); height: 60px; opacity: 1; z-index: 0;" />
-      <img src="${barmaLogo}" style="position: absolute; right: 0; top: 40%; transform: translateY(-50%); height: 100px; opacity: 1; z-index: 0;" />
+      <img src="${pob5Logo}" style="position: absolute; left: 0; top: 40%; transform: translateY(-50%); height: 60px;" />
+      <img src="${barmaLogo}" style="position: absolute; right: 0; top: 40%; transform: translateY(-50%); height: 100px;" />
       <div style="position: relative; z-index: 1;">
         <div style="font-weight:700; font-size:18px;">POBLACION 5</div>
         <div style="font-size:12px;">Poblacion 5, Midsayap, Cotabato</div>
@@ -242,10 +253,9 @@ function buildReportTitle() {
   </div>`;
 }
 
-// ✅ Updated Footer to include "Printed by"
 function buildExportFooter() {
   const today = new Date().toLocaleDateString();
-  const printedBy = "{{ username }}"; // injected from Flask
+  const printedBy = "{{ username }}";
   return `
     <div style="font-size:12px; margin-top:12px; display:flex; justify-content:space-between;">
       <div>Print date: ${today}</div>
@@ -254,9 +264,6 @@ function buildExportFooter() {
   `;
 }
 
-
-
-// PDF Export
 async function exportFilteredToPDF() {
   const rows = document.querySelectorAll('#historyTable tbody tr.export-visible');
   if (!rows.length) return alert('No visible records to export.');
@@ -291,7 +298,6 @@ async function exportFilteredToPDF() {
   }).save();
 }
 
-
 async function printReport() {
   const rows = document.querySelectorAll('#historyTable tbody tr.export-visible');
   if (!rows.length) return alert('No visible records to print.');
@@ -310,7 +316,6 @@ async function printReport() {
       table { border-collapse: collapse; width: 100%; margin-top: 8px; }
       th, td { border: 0.5px solid black; padding: 4px; text-align: center; font-size: 12px; }
       th { font-weight: bold; }
-      img { vertical-align: middle; }
     </style>
   `;
 
@@ -331,19 +336,11 @@ async function printReport() {
   `);
   printWindow.document.close();
 
-  // Wait for all images to load
   printWindow.onload = () => {
     printWindow.focus();
     printWindow.print();
   };
 }
-
-
-
-document.getElementById('searchInput').addEventListener('input', filterTable);
-document.getElementById('dateFilter').addEventListener('change', filterTable);
-document.getElementById('statusFilter').addEventListener('change', filterTable);
-filterTable();
 </script>
 </body>
 </html>
