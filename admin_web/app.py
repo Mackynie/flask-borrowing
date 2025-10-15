@@ -1782,6 +1782,25 @@ def edit_resident(id):
     return redirect(url_for('manage_accounts'))
 
 
+@app.route('/admin_account', methods=['GET', 'POST'])
+def admin_account():
+    admin = Admin.query.filter_by(id=session['admin_id']).first()
+    
+    if request.method == 'POST':
+        # Update admin details
+        admin.full_name = request.form['full_name']
+        admin.email = request.form['email']
+        password = request.form['password']
+        if password:
+            admin.password = generate_password_hash(password)
+        db.session.commit()
+        flash('Account updated successfully!', 'success')
+        return redirect(url_for('admin_account'))
+
+    # Optional: Fetch recent admin activity
+    activity_logs = get_admin_logs(admin.id)  # Implement this function as needed
+    return render_template('admin_account.html', admin=admin, activity_logs=activity_logs)
+
 if __name__ == '__main__':
     app.run(host="0.0.0.0", port=5000, debug=True)
 
