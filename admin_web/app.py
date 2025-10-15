@@ -268,13 +268,15 @@ class History(db.Model):
     reason = db.Column(db.Text, nullable=True)
 
 
-def restrict_overdue_accounts():
-    with app.app_context():  # ensure context if called outside routes
+def restrict_overdue_accounts(admin_id=None):
+    """Restrict residents with overdue borrowings.
+
+    admin_id: optional, only set if an admin triggered this manually.
+    """
+    with app.app_context():  # ensures this works even outside request
         overdue_borrowings = Borrowing.query.filter(
-            and_(
-                Borrowing.return_date < date.today(),
-                Borrowing.status.in_(['Approved', 'Return Requested'])
-            )
+            Borrowing.return_date < datetime.now(PH_TZ).date(),
+            Borrowing.status.in_(['Approved', 'Return Requested'])
         ).all()
 
         restricted_names = set()
@@ -285,7 +287,7 @@ def restrict_overdue_accounts():
                 resident.is_restricted = True
                 restricted_names.add(resident.full_name)
 
-                # ✅ Log automatic restriction in History
+                # Log automatic restriction in History
                 new_history = History(
                     type='Account Restriction',
                     resident_name=resident.full_name,
@@ -294,12 +296,19 @@ def restrict_overdue_accounts():
                 )
                 db.session.add(new_history)
 
+                # ✅ Only log AdminActivity if triggered by an admin
+                if admin_id:
+                    activity = AdminActivity(
+                        admin_id=admin_id,
+                        action=f"Restricted overdue account for {resident.full_name} (Borrowed: {borrow.item})"
+                    )
+                    db.session.add(activity)
+
         if restricted_names:
             db.session.commit()
             print(f"[AUTO RESTRICT] Restricted residents: {restricted_names}")
         else:
             print("[AUTO RESTRICT] No accounts to restrict today.")
-
 
 
 @app.route('/')
@@ -548,22 +557,18 @@ def approve_borrowing(id):
         flash('Borrowing request already approved.', 'info')
         return redirect(url_for('dashboard'))
 
-    # Calculate total approved quantity for this asset
     approved_borrowed_qty = db.session.query(db.func.sum(Borrowing.quantity)).filter(
         Borrowing.asset_id == asset.id,
         Borrowing.status == 'Approved'
     ).scalar() or 0
 
     available_qty = asset.quantity - approved_borrowed_qty
-
     if borrowing.quantity > available_qty:
         flash(f"Cannot approve request: requested quantity ({borrowing.quantity}) exceeds available assets ({available_qty}).", "danger")
         return redirect(url_for('dashboard'))
 
-    # ✅ Approve borrowing
     borrowing.status = "Approved"
 
-    # ✅ Update asset availability and active borrowed count
     asset.available_quantity = asset.quantity - db.session.query(
         db.func.sum(Borrowing.quantity)
     ).filter(
@@ -578,7 +583,7 @@ def approve_borrowing(id):
         Borrowing.status == 'Approved'
     ).scalar() or 0
 
-    # ✅ Add to history
+    # Add to History
     history = History(
         type='Borrowing',
         resident_name=borrowing.resident_name,
@@ -586,24 +591,32 @@ def approve_borrowing(id):
         quantity=borrowing.quantity,
         purpose=borrowing.purpose,
         action_type='Approved',
-        borrow_date=borrowing.borrow_date,  # include borrow_date if available
+        borrow_date=borrowing.borrow_date,
         return_date=borrowing.return_date
     )
-
     db.session.add(history)
     db.session.commit()
-    flash('Borrowing approved.', 'success')
 
-    # ✅ Send SMS notification
+    # 🔹 Log Admin Activity
+    admin_id = session.get('admin_id')
+    if admin_id:
+        activity = AdminActivity(
+            admin_id=admin_id,
+            action=f"Approved borrowing for {borrowing.resident_name} ({borrowing.item}, {borrowing.quantity})"
+        )
+        db.session.add(activity)
+        db.session.commit()
+
+    # Send SMS
     resident = Resident.query.filter_by(full_name=borrowing.resident_name).first()
     if resident:
         send_sms(
             resident.phone_number,
             f"Hi {resident.full_name}, your borrowing request for {borrowing.item} "
-            f"({borrowing.quantity}) has been APPROVED. You may now claim the item(s) at the Barangay Hall. "
-            f"Kindly ensure that the asset is returned on or before {borrowing.return_date} to avoid inconvenience."
+            f"({borrowing.quantity}) has been APPROVED. Kindly return by {borrowing.return_date}."
         )
 
+    flash('Borrowing approved.', 'success')
     return redirect(url_for('dashboard'))
 
 
@@ -618,7 +631,7 @@ def reject_borrowing(id):
     borrowing.status = 'Rejected'
     borrowing.rejection_reason = reason
 
-    # ✅ Add to History with reason field
+    # Add to History
     history = History(
         type='Borrowing',
         resident_name=borrowing.resident_name,
@@ -628,12 +641,22 @@ def reject_borrowing(id):
         action_type='Rejected',
         borrow_date=borrowing.borrow_date,
         return_date=borrowing.return_date,
-        reason=reason  # ✅ store rejection reason
+        reason=reason
     )
-
     db.session.add(history)
     db.session.commit()
 
+    # 🔹 Log Admin Activity
+    admin_id = session.get('admin_id')
+    if admin_id:
+        activity = AdminActivity(
+            admin_id=admin_id,
+            action=f"Rejected borrowing for {borrowing.resident_name} ({borrowing.item}, {borrowing.quantity}). Reason: {reason}"
+        )
+        db.session.add(activity)
+        db.session.commit()
+
+    # Send SMS
     resident = Resident.query.filter_by(full_name=borrowing.resident_name).first()
     if resident:
         send_sms(
@@ -643,6 +666,7 @@ def reject_borrowing(id):
         )
 
     return redirect(url_for('dashboard'))
+
 
 
 @app.route('/generate_residents_report')
