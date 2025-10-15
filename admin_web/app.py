@@ -652,14 +652,15 @@ def history_page():
     if not session.get('admin'):
         return redirect(url_for('login'))
 
-    # Separate query for restriction logs
+    # Restriction logs (all)
     restriction_logs = History.query.filter_by(type='Account Restriction').order_by(History.action_date.desc()).all()
     
     # Other history logs (reservations and borrowings)
     other_logs = History.query.filter(History.type != 'Account Restriction').order_by(History.action_date.desc()).all()
 
-    # Restriction summary: count how many times each resident was restricted
-    restriction_summary = Counter([r.resident_name for r in restriction_logs])
+    # Restriction summary: only count actions that actually restrict
+    restricted_logs = [r for r in restriction_logs if r.action_type.lower() in ('automatically restricted', 'restricted')]
+    restriction_summary = Counter([r.resident_name for r in restricted_logs])
 
     admin = Admin.query.get(session['admin_id'])
     
