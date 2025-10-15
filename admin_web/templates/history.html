@@ -73,36 +73,53 @@
     <main class="col-md-10 ms-sm-auto px-4 mt-4">
       <h1 class="fw-bold mb-4 print-hide">History</h1>
 
-      <!-- Filters -->
-      <div class="screen-only d-flex gap-2 mb-4 align-items-center flex-wrap">
-        <div class="input-group" style="width: 250px;">
-          <span class="input-group-text bg-white border-end-0"><i class="bi bi-search text-muted"></i></span>
-          <input type="text" id="searchInput" class="form-control border-start-0" placeholder="Search name, item, or status">
+      <!-- Filters and Type Buttons -->
+      <div class="screen-only d-flex flex-wrap justify-content-between align-items-center mb-3">
+        <!-- Left: Search, Date, Status Filters -->
+        <div class="d-flex gap-2 flex-wrap">
+          <div class="input-group" style="width: 250px;">
+            <span class="input-group-text bg-white border-end-0"><i class="bi bi-search text-muted"></i></span>
+            <input type="text" id="searchInput" class="form-control border-start-0" placeholder="Search name, item, or status">
+          </div>
+          <div class="input-group" style="width: 200px;">
+            <span class="input-group-text bg-white border-end-0"><i class="bi bi-calendar-event text-muted"></i></span>
+            <input type="date" id="dateFilter" class="form-control border-start-0">
+          </div>
+          <div class="input-group" style="width: 200px;">
+            <span class="input-group-text bg-white border-end-0"><i class="bi bi-funnel text-muted"></i></span>
+            <select id="statusFilter" class="form-select border-start-0">
+              <option value="">All Statuses</option>
+              <option value="Approved">Approved</option>
+              <option value="Rejected">Rejected</option>
+              <option value="Returned">Returned</option>
+            </select>
+          </div>
         </div>
-        <div class="input-group" style="width: 200px;">
-          <span class="input-group-text bg-white border-end-0"><i class="bi bi-calendar-event text-muted"></i></span>
-          <input type="date" id="dateFilter" class="form-control border-start-0">
-        </div>
-        <div class="input-group" style="width: 200px;">
-          <span class="input-group-text bg-white border-end-0"><i class="bi bi-funnel text-muted"></i></span>
-          <select id="statusFilter" class="form-select border-start-0">
-            <option value="">All Statuses</option>
-            <option value="Approved">Approved</option>
-            <option value="Rejected">Rejected</option>
-            <option value="Returned">Returned</option>
-          </select>
+      
+        <!-- Right: Type Buttons + Export/Print -->
+        <div class="d-flex gap-2 mt-2 mt-md-0">
+          <div class="btn-group">
+            <button class="btn btn-sm text-white" style="background-color: #a10b0b;" onclick="filterByType('Borrowing')">
+              <i class="bi bi-arrow-left-right me-1"></i> Borrowing
+            </button>
+            <button class="btn btn-sm text-white" style="background-color: #FF8A08;" onclick="filterByType('Reservation')">
+              <i class="bi bi-calendar-check me-1"></i> Reservation
+            </button>
+            <button class="btn btn-sm text-dark" style="background-color: #FFC100;" onclick="filterByType('')">
+              <i class="bi bi-list-ul me-1"></i> Show All
+            </button>
+          </div>
+          <div class="btn-group">
+            <button class="btn btn-sm text-white" style="background-color: #b30000;" onclick="exportFilteredToPDF()">
+              <i class="bi bi-filetype-pdf me-1"></i> Export PDF
+            </button>
+            <button class="btn btn-sm text-dark" style="background-color: #FFC100;" onclick="printReport()">
+              <i class="bi bi-printer me-1"></i> Print
+            </button>
+          </div>
         </div>
       </div>
 
-
-      <div class="d-flex gap-2 mb-3 screen-only">
-        <button class="btn btn-primary" onclick="exportFilteredToPDF()">
-          <i class="bi bi-file-earmark-pdf-fill me-1"></i>Export PDF
-        </button>
-        <button class="btn btn-secondary" onclick="printReport()">
-          <i class="bi bi-printer-fill me-1"></i>Print
-        </button>
-      </div>
 
      <!-- Tabs -->
     <ul class="nav nav-tabs mb-3" id="historyTabs" role="tablist">
