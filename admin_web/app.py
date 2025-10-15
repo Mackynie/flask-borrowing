@@ -659,8 +659,12 @@ def history_page():
     other_logs = History.query.filter(History.type != 'Account Restriction').order_by(History.action_date.desc()).all()
 
     # Restriction summary: only count actions that actually restrict
-    restricted_logs = [r for r in restriction_logs if r.action_type.lower() in ('automatically restricted', 'restricted')]
-    restriction_summary = Counter([r.resident_name for r in restricted_logs])
+    restricted_logs = [
+    r for r in restriction_logs 
+    if r.action_type.lower() in ('automatically restricted', 'restricted')
+    ]
+    restriction_summary = {resident: count for resident, count in Counter([r.resident_name for r in restricted_logs]).items()}
+
 
     admin = Admin.query.get(session['admin_id'])
     
