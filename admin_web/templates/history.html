@@ -96,17 +96,7 @@
           </div>
         </div>
       
-       
-          <div class="btn-group">
-            <button class="btn btn-sm text-white" style="background-color: #b30000;" onclick="exportFilteredToPDF()">
-              <i class="bi bi-filetype-pdf me-1"></i> Export PDF
-            </button>
-            <button class="btn btn-sm text-dark" style="background-color: #FFC100;" onclick="printReport()">
-              <i class="bi bi-printer me-1"></i> Print
-            </button>
-          </div>
-        </div>
-      </div>
+      
 
 
      <!-- Tabs -->
@@ -126,6 +116,23 @@
     <div class="tab-content" id="historyTabsContent">
       <!-- Borrowings & Reservations Tab -->
       <div class="tab-pane fade show active" id="logs" role="tabpanel">
+      
+        <!-- Only the type filter buttons inside the tab -->
+        <div class="mb-3">
+          <div class="btn-group">
+            <button class="btn btn-sm text-white" style="background-color: #a10b0b;" onclick="filterByType('Borrowing')">
+              <i class="bi bi-arrow-left-right me-1"></i> Borrowing
+            </button>
+            <button class="btn btn-sm text-white" style="background-color: #FF8A08;" onclick="filterByType('Reservation')">
+              <i class="bi bi-calendar-check me-1"></i> Reservation
+            </button>
+            <button class="btn btn-sm text-dark" style="background-color: #FFC100;" onclick="filterByType('')">
+              <i class="bi bi-list-ul me-1"></i> Show All
+            </button>
+          </div>
+        </div>
+      
+        <!-- Table -->
         <div class="card shadow-sm mb-4" data-aos="fade-up">
           <div class="card-body">
             <div class="table-responsive" id="exportSection">
@@ -173,6 +180,19 @@
           </div>
         </div>
       </div>
+      
+      <!-- Export / Print buttons outside the tab -->
+      <div class="d-flex justify-content-end mb-3 screen-only">
+        <div class="btn-group">
+          <button class="btn btn-sm text-white" style="background-color: #b30000;" onclick="exportFilteredToPDF()">
+            <i class="bi bi-filetype-pdf me-1"></i> Export to PDF
+          </button>
+          <button class="btn btn-sm text-dark" style="background-color: #FFC100;" onclick="printReport()">
+            <i class="bi bi-printer me-1"></i> Print
+          </button>
+        </div>
+      </div>
+
     
       <!-- Account Restrictions Tab -->
       <div class="tab-pane fade" id="restrictions" role="tabpanel">
