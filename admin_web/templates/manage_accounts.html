@@ -32,7 +32,6 @@
         <li class="nav-item"><a class="nav-link" href="{{ url_for('dashboard') }}"><i class="bi bi-speedometer2 me-2"></i>Dashboard</a></li>
         <li class="nav-item"><a class="nav-link" href="{{ url_for('assets_page') }}"><i class="bi bi-box-seam me-2"></i>Assets</a></li>
         <li class="nav-item"><a class="nav-link" href="{{ url_for('reservations_page') }}"><i class="bi bi-calendar-check me-2"></i>Reservations</a></li>
-        <li class="nav-item"><a class="nav-link" href="{{ url_for('borrowings_page') }}"><i class="bi bi-arrow-left-right me-2"></i>Borrowing</a></li>
         <li class="nav-item"><a class="nav-link active" href="{{ url_for('manage_accounts') }}"><i class="bi bi-people-fill me-2"></i>Accounts</a></li>
         <li class="nav-item"><a class="nav-link" href="{{ url_for('history_page') }}"><i class="bi bi-clock-history me-2"></i>History</a></li>
         <li class="nav-item"><a class="nav-link" href="{{ url_for('help_page') }}"><i class="bi bi-question-circle me-2"></i>Guide</a></li>
@@ -100,14 +99,19 @@
             <div class="w-50">
               <input type="text" id="searchInput" class="form-control" placeholder="Search resident name...">
             </div>
-            <div>
-              <button class="btn btn-secondary btn-sm me-1" onclick="printResidentsReport()">
+           <div class="d-flex justify-content-between flex-wrap mb-3">
+            <div class="w-50">
+              <input type="text" id="searchInput" class="form-control" placeholder="Search resident name...">
+            </div>
+            <div class="btn-group">
+              <button class="btn btn-sm text-white" style="background-color: #b30000;" onclick="exportResidentsToPDF()">
+                <i class="bi bi-filetype-pdf me-1"></i> Export to PDF
+              </button>
+              <button class="btn btn-sm text-dark" style="background-color: #FFC100;" onclick="printResidentsReport()">
                 <i class="bi bi-printer me-1"></i> Print
               </button>
-              <button class="btn btn-danger btn-sm" onclick="exportResidentsToPDF()">
-                <i class="bi bi-filetype-pdf me-1"></i> Generate Residents Report
-              </button>
             </div>
+          </div>
           </div>
           <div class="table-responsive">
             <table class="table table-hover table-bordered align-middle" id="residentTable">
