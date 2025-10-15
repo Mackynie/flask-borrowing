@@ -528,18 +528,36 @@ def approve_borrowing(id):
         flash(f"Cannot approve request: requested quantity ({borrowing.quantity}) exceeds available assets ({available_qty}).", "danger")
         return redirect(url_for('dashboard'))
 
-    # Approve borrowing
+    # ✅ Approve borrowing
     borrowing.status = "Approved"
 
-    # Add to history
+    # ✅ Update asset availability and active borrowed count
+    asset.available_quantity = asset.quantity - db.session.query(
+        db.func.sum(Borrowing.quantity)
+    ).filter(
+        Borrowing.asset_id == asset.id,
+        Borrowing.status == 'Approved'
+    ).scalar() or 0
+
+    asset.active_borrowed = db.session.query(
+        db.func.sum(Borrowing.quantity)
+    ).filter(
+        Borrowing.asset_id == asset.id,
+        Borrowing.status == 'Approved'
+    ).scalar() or 0
+
+    # ✅ Add to history
     history = History(
         type='Borrowing',
         resident_name=borrowing.resident_name,
         item=borrowing.item,
         quantity=borrowing.quantity,
         purpose=borrowing.purpose,
-        action_type='Approved'
+        action_type='Approved',
+        borrow_date=borrowing.borrow_date,  # include borrow_date if available
+        return_date=borrowing.return_date
     )
+
     db.session.add(history)
     db.session.commit()
     flash('Borrowing approved.', 'success')
@@ -549,10 +567,13 @@ def approve_borrowing(id):
     if resident:
         send_sms(
             resident.phone_number,
-            f"Hi {resident.full_name}, your borrowing request for {borrowing.item} ({borrowing.quantity}) has been APPROVED. You may now claim the item(s) at the Barangay Hall. Kindly ensure that the asset is returned on or before {borrowing.return_date} to avoid inconvenience."
+            f"Hi {resident.full_name}, your borrowing request for {borrowing.item} "
+            f"({borrowing.quantity}) has been APPROVED. You may now claim the item(s) at the Barangay Hall. "
+            f"Kindly ensure that the asset is returned on or before {borrowing.return_date} to avoid inconvenience."
         )
 
     return redirect(url_for('dashboard'))
+
 
 
 @app.route('/reject_borrowing/<int:id>', methods=['POST'])
@@ -587,6 +608,18 @@ def reject_borrowing(id):
         )
 
     return redirect(url_for('dashboard'))
+
+@app.route('/generate_residents_report')
+def generate_residents_report():
+    residents = Resident.query.all()
+    output = "Full Name, Username, Phone Number, Gender, Purok\n"
+    for r in residents:
+        output += f"{r.full_name},{r.username},{r.phone_number},{r.gender},{r.purok}\n"
+
+    response = make_response(output)
+    response.headers["Content-Disposition"] = "attachment; filename=residents_report.csv"
+    response.headers["Content-Type"] = "text/csv"
+    return response
 
 
 @app.route('/history')
@@ -834,7 +867,9 @@ def borrow_asset():
             purpose=data['purpose'],
             status='Pending',
             request_date=datetime.strptime(data['request_date'], '%Y-%m-%d'),
-            return_date=datetime.strptime(data['return_date'], '%Y-%m-%d')
+            return_date=datetime.strptime(data['return_date'], '%Y-%m-%d'),
+            borrow_date=datetime.strptime(data['borrow_date'], '%Y-%m-%d')
+
         )
         db.session.add(new_borrow)
         db.session.commit()
