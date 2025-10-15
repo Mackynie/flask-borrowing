@@ -84,26 +84,36 @@
         </div>
       </div>
 
-      <!-- Assets Overview -->
+      <!-- ✅ Assets Overview Section -->
       <div class="card shadow-sm mb-4" data-aos="fade-up">
         <div class="card-body">
-          <h5>Assets Overview</h5>
+          <h5 class="mb-3">Assets Overview</h5>
           <table class="table table-striped table-hover align-middle">
             <thead class="table-light">
               <tr>
                 <th>Asset Name</th>
                 <th>Total Quantity</th>
-                <th>Available</th>
+                <th>Available Assets</th>
                 <th>Active Borrowed</th>
               </tr>
             </thead>
             <tbody>
-              {% for asset in assets %}
+              {% for a in assets %}
+              {% set approved_borrowed = borrowings | selectattr('asset_id', 'equalto', a.id) | selectattr('status', 'equalto', 'Approved') | map(attribute='quantity') | sum %}
+              {% set available = a.quantity - approved_borrowed %}
               <tr>
-                <td>{{ asset.name }}</td>
-                <td>{{ asset.quantity }}</td>
-                <td>{{ asset.available_quantity }}</td>
-                <td>{{ asset.active_borrowed }}</td>
+                <td>{{ a.name }}</td>
+                <td>{{ a.quantity }}</td>
+                <td>
+                  {% if available <= 0 %}
+                    <span class="badge bg-danger">0</span>
+                  {% elif available < 3 %}
+                    <span class="badge bg-warning text-dark">{{ available }}</span>
+                  {% else %}
+                    {{ available }}
+                  {% endif %}
+                </td>
+                <td>{{ approved_borrowed }}</td>
               </tr>
               {% endfor %}
             </tbody>
@@ -322,46 +332,6 @@
         document.getElementById("totalAssets").innerText = data.assets;
         document.getElementById("totalResidents").innerText = data.residents;
         document.getElementById("pendingRequests").innerText = data.pending;
-
-        const borBody = document.getElementById("pendingBorrowingsBody");
-        borBody.innerHTML = "";
-        data.pending_borrowings.forEach(b => {
-          borBody.innerHTML += `<tr>
-            <td>${b.resident_name}</td>
-            <td>${b.item}</td>
-            <td>${b.quantity}</td>
-            <td>${b.purpose || ""}</td>
-            <td>${b.borrow_date ? formatTime12(b.borrow_date) : "N/A"}</td>
-            <td>${formatTime12(b.request_date)}</td>
-            <td>${formatTime12(b.return_date)}</td>
-            <td><span class="badge bg-warning text-dark">${b.status}</span></td>
-            <td>
-              <a href="/approve_borrowing/${b.id}" class="btn btn-sm btn-success">Approve</a>
-              <button class="btn btn-sm btn-danger" onclick="openRejectModal('borrowing', ${b.id})">Reject</button>
-            </td>
-          </tr>`;
-        });
-
-        const activeBody = document.getElementById("activeTableBody");
-        activeBody.innerHTML = "";
-        data.active_borrowings.forEach(b => {
-          activeBody.innerHTML += `<tr>
-            <td>${b.resident_name}</td>
-            <td>${b.item}</td>
-            <td>${b.quantity}</td>
-            <td>${b.purpose || ""}</td>
-            <td>${b.borrow_date ? formatTime12(b.borrow_date) : "N/A"}</td>
-            <td>${formatTime12(b.request_date)}</td>
-            <td>${formatTime12(b.return_date)}</td>
-            <td>${b.status === "Return Requested" ? '<span class="badge bg-info text-dark">Return Requested</span>' : '<span class="badge bg-success">Approved</span>'}</td>
-            <td>${b.status === "Return Requested"
-              ? `<form method="POST" action="/admin/approve-return/${b.id}">
-                  <button type="submit" class="btn btn-sm btn-primary">Approve Return</button>
-                </form>`
-              : '<span class="text-muted">No action</span>'}
-            </td>
-          </tr>`;
-        });
       });
   }
   setInterval(fetchUpdates, 5000);
