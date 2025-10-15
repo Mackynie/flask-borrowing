@@ -200,6 +200,9 @@ class Asset(db.Model):
     name = db.Column(db.String(255), nullable=False)
     quantity = db.Column(db.Integer, nullable=False)
     classification = db.Column(db.String(20), nullable=False, default='Borrowing')
+    available_quantity = db.Column(db.Integer, nullable=True, default=0)
+    active_borrowed = db.Column(db.Integer, nullable=True, default=0)
+
 
     # ✅ Relationships to Borrowing and Reservation
     borrowings = db.relationship('Borrowing', backref='asset', lazy=True)
@@ -236,12 +239,8 @@ class Borrowing(db.Model):
     rejection_reason = db.Column(db.String(255), nullable=True)
     asset_id = db.Column(db.Integer, db.ForeignKey('assets.id'), nullable=False)
     reminder_sent = db.Column(db.Boolean, default=False)
-
-
-
-
-
-
+    borrow_date = db.Column(db.Date, nullable=True)
+    
 
 class History(db.Model):
     id = db.Column(db.Integer, primary_key=True)
@@ -252,6 +251,10 @@ class History(db.Model):
     purpose = db.Column(db.String(200))  # ➕ Add this
     action_type = db.Column(db.String(50))  # 'Approved', 'Rejected', 'Returned'
     action_date = db.Column(db.DateTime, default=datetime.utcnow)
+    borrow_date = db.Column(db.Date, nullable=True)
+    return_date = db.Column(db.Date, nullable=True)
+    reason = db.Column(db.String(255), nullable=True)
+
 
 def restrict_overdue_accounts():
     with app.app_context():  # ensure context if called outside routes
