@@ -214,6 +214,7 @@
 const adminName = "{{ admin_name }}";
 AOS.init();
 
+// ✅ Search filter
 function filterAssets() {
   const term = document.getElementById('searchInput').value.toLowerCase();
   document.querySelectorAll('#assetsTable tbody tr').forEach(row => {
@@ -224,9 +225,60 @@ function filterAssets() {
 }
 document.getElementById('searchInput').addEventListener('input', filterAssets);
 
+// ✅ Auto close alerts
 setTimeout(() => {
   document.querySelectorAll('.alert').forEach(alert => new bootstrap.Alert(alert).close());
 }, 4000);
+
+// ✅ Print Report Function
+async function printReport() {
+  const headerHTML = `
+    <div style="text-align:center; margin-bottom:10px;">
+      <img src="{{ url_for('static', filename='img/logo3.png') }}" style="height:60px; float:right;">
+      <img src="{{ url_for('static', filename='img/POB5.jpg') }}" style="height:50px; float:left;">
+      <div style="font-weight:bold; font-size:16px;">POBLACION 5</div>
+      <div style="font-size:12px;">Poblacion 5, Midsayap, Cotabato</div>
+      <div style="font-size:11px; margin-bottom:5px;">BARMA ASSETS REPORT</div>
+      <hr style="border:1px solid #000; margin:5px 0;">
+    </div>
+  `;
+
+  const footerHTML = `
+    <div style="font-size:12px; margin-top:8px; display:flex; justify-content:space-between;">
+      <span>Print date: ${new Date().toLocaleDateString()}</span>
+      <span>Printed by: ${adminName}</span>
+    </div>
+  `;
+
+  const tableClone = document.getElementById('assetsTable').cloneNode(true);
+
+  // Remove the "Actions" column
+  tableClone.querySelectorAll('thead th:last-child').forEach(th => th.remove());
+  tableClone.querySelectorAll('tbody tr').forEach(tr => tr.querySelector('td:last-child')?.remove());
+
+  // Apply simple print styling
+  const style = `
+    <style>
+      body { font-family: Arial, sans-serif; padding: 20px; color: #000; }
+      table { border-collapse: collapse; width: 100%; table-layout: fixed; }
+      th, td { border: 0.5px solid black; padding: 4px; font-size: 12px; text-align: center; word-wrap: break-word; }
+      th { font-weight: bold; }
+    </style>
+  `;
+
+  const printWindow = window.open('', '', 'width=900,height=650');
+  printWindow.document.write(`
+    <html>
+      <head><title>Assets Report</title>${style}</head>
+      <body>${headerHTML}${tableClone.outerHTML}${footerHTML}</body>
+    </html>
+  `);
+  printWindow.document.close();
+  printWindow.onload = () => {
+    printWindow.focus();
+    printWindow.print();
+  };
+}
 </script>
 </body>
 </html>
