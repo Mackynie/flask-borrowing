@@ -1787,7 +1787,6 @@ def admin_account():
     admin = Admin.query.filter_by(id=session['admin_id']).first()
     
     if request.method == 'POST':
-        # Update admin details
         admin.full_name = request.form['full_name']
         admin.email = request.form['email']
         password = request.form['password']
@@ -1797,9 +1796,10 @@ def admin_account():
         flash('Account updated successfully!', 'success')
         return redirect(url_for('admin_account'))
 
-    # Optional: Fetch recent admin activity
-    activity_logs = get_admin_logs(admin.id)  # Implement this function as needed
-    return render_template('admin_account.html', admin=admin, activity_logs=activity_logs)
+    # Comment out activity logs for now
+    # activity_logs = get_admin_logs(admin.id)
+    return render_template('admin_account.html', admin=admin)  # remove activity_logs
+
 
 if __name__ == '__main__':
     app.run(host="0.0.0.0", port=5000, debug=True)
