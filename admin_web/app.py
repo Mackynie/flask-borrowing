@@ -453,13 +453,15 @@ def approve_reservation(id):
     reservation = Reservation.query.get_or_404(id)
     reservation.status = 'Approved'
 
-    # Add to history
+    # ✅ Add to history with reservation dates
     history = History(
         type='Reservation',
         resident_name=reservation.resident_name,
         item=reservation.item,
         purpose=reservation.purpose,
-        action_type='Approved'
+        action_type='Approved',
+        borrow_date=reservation.reservation_start,  # ✅ store Reserved Date From
+        return_date=reservation.reservation_end      # ✅ store Reserved Date To
     )
 
     db.session.add(history)
@@ -468,8 +470,12 @@ def approve_reservation(id):
     # ✅ Send SMS
     resident = Resident.query.filter_by(full_name=reservation.resident_name).first()
     if resident:
-        send_sms(resident.phone_number,
-                 f"Hi {resident.full_name}, your reservation for {reservation.item} has been APPROVED.")
+        send_sms(
+            resident.phone_number,
+            f"Hi {resident.full_name}, your reservation for {reservation.item} "
+            f"from {reservation.reservation_start.strftime('%Y-%m-%d')} "
+            f"to {reservation.reservation_end.strftime('%Y-%m-%d')} has been APPROVED."
+        )
 
     return redirect(url_for('dashboard'))
 
@@ -481,31 +487,35 @@ def reject_reservation(id):
         return redirect(url_for('login'))
 
     reservation = Reservation.query.get_or_404(id)
-    reason = request.form.get('reason')   # ✅ get reason from form
+    reason = request.form.get('reason')
     reservation.status = 'Rejected'
     reservation.rejection_reason = reason
 
-    # Add to history
+    # ✅ Add to History with reason field
     history = History(
         type='Reservation',
         resident_name=reservation.resident_name,
         item=reservation.item,
         purpose=reservation.purpose,
-        action_type=f"Rejected ({reason})"  # ✅ include reason
+        action_type='Rejected',
+        borrow_date=reservation.reservation_start,
+        return_date=reservation.reservation_end,
+        reason=reason  # ✅ store rejection reason here
     )
 
     db.session.add(history)
     db.session.commit()
 
-    # ✅ Send SMS with reason
     resident = Resident.query.filter_by(full_name=reservation.resident_name).first()
     if resident:
         send_sms(
             resident.phone_number,
-            f"Hi! {resident.full_name}, your reservation for {reservation.item} has been REJECTED. Reason: {reason}"
+            f"Hi {resident.full_name}, your reservation for {reservation.item} has been REJECTED. Reason: {reason}"
         )
 
     return redirect(url_for('dashboard'))
+
+
 
 @app.route('/approve_borrowing/<int:id>', methods=['GET', 'POST'])
 def approve_borrowing(id):
@@ -582,32 +592,36 @@ def reject_borrowing(id):
         return redirect(url_for('login'))
 
     borrowing = Borrowing.query.get_or_404(id)
-    reason = request.form.get('reason')   # ✅ get reason from form
+    reason = request.form.get('reason')
     borrowing.status = 'Rejected'
     borrowing.rejection_reason = reason
 
-    # Add to history
+    # ✅ Add to History with reason field
     history = History(
         type='Borrowing',
         resident_name=borrowing.resident_name,
         item=borrowing.item,
         quantity=borrowing.quantity,
         purpose=borrowing.purpose,
-        action_type=f"Rejected ({reason})"  # ✅ include reason
+        action_type='Rejected',
+        borrow_date=borrowing.borrow_date,
+        return_date=borrowing.return_date,
+        reason=reason  # ✅ store rejection reason
     )
 
     db.session.add(history)
     db.session.commit()
 
-    # ✅ Send SMS with reason
     resident = Resident.query.filter_by(full_name=borrowing.resident_name).first()
     if resident:
         send_sms(
             resident.phone_number,
-            f"Hi! {resident.full_name}, your borrowing request for {borrowing.item} ({borrowing.quantity}) has been REJECTED. Reason: {reason}"
+            f"Hi {resident.full_name}, your borrowing request for {borrowing.item} "
+            f"({borrowing.quantity}) has been REJECTED. Reason: {reason}"
         )
 
     return redirect(url_for('dashboard'))
+
 
 @app.route('/generate_residents_report')
 def generate_residents_report():
