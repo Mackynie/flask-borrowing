@@ -94,95 +94,119 @@
         </div>
       </div>
 
-      <!-- Table and Export -->
-      <div class="card shadow-sm mb-4" data-aos="fade-up">
-        <div class="card-body">
-          <div class="d-flex justify-content-between mt-3">
-            <div class="btn-group">
-              <button class="btn btn-sm text-white" style="background-color: #a10b0b;" onclick="filterByType('Borrowing')"><i class="bi bi-arrow-left-right me-1"></i> Borrowing</button>
-              <button class="btn btn-sm text-white" style="background-color: #FF8A08;" onclick="filterByType('Reservation')"><i class="bi bi-calendar-check me-1"></i> Reservation</button>
-              <button class="btn btn-sm text-dark" style="background-color: #FFC100;" onclick="filterByType('')"><i class="bi bi-list-ul me-1"></i> Show All</button>
-            </div>
-            <div class="btn-group">
-              <button class="btn btn-sm text-white" style="background-color: #b30000;" onclick="exportFilteredToPDF()"><i class="bi bi-filetype-pdf me-1"></i> Export to PDF</button>
-              <button class="btn btn-sm text-dark" style="background-color: #FFC100;" onclick="printReport()"><i class="bi bi-printer me-1"></i> Print</button>
+     <!-- Tabs -->
+    <ul class="nav nav-tabs mb-3" id="historyTabs" role="tablist">
+      <li class="nav-item" role="presentation">
+        <button class="nav-link active" id="logs-tab" data-bs-toggle="tab" data-bs-target="#logs" type="button" role="tab">
+          Borrowings & Reservations
+        </button>
+      </li>
+      <li class="nav-item" role="presentation">
+        <button class="nav-link" id="restrictions-tab" data-bs-toggle="tab" data-bs-target="#restrictions" type="button" role="tab">
+          Account Restrictions
+        </button>
+      </li>
+    </ul>
+    
+    <div class="tab-content" id="historyTabsContent">
+      <!-- Borrowings & Reservations Tab -->
+      <div class="tab-pane fade show active" id="logs" role="tabpanel">
+        <div class="card shadow-sm mb-4" data-aos="fade-up">
+          <div class="card-body">
+            <div class="table-responsive" id="exportSection">
+              <table id="historyTable" class="table table-hover table-bordered align-middle">
+                <thead class="table-light">
+                  <tr>
+                    <th>Type</th>
+                    <th>Resident</th>
+                    <th>Item</th>
+                    <th>Quantity</th>
+                    <th>Purpose</th>
+                    <th id="dateFromHeader">Borrow Date</th>
+                    <th id="dateToHeader">Return Date</th>
+                    <th>Status</th>
+                    <th>Reason</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {% for h in other_logs %}
+                  <tr class="export-visible">
+                    <td>{{ h.type }}</td>
+                    <td>{{ h.resident_name or 'N/A' }}</td>
+                    <td>{{ h.item or 'N/A' }}</td>
+                    <td>{{ h.quantity or 'N/A' }}</td>
+                    <td>{{ h.purpose or 'N/A' }}</td>
+                    <td>{{ h.borrow_date.strftime('%Y-%m-%d') if h.borrow_date else 'N/A' }}</td>
+                    <td>{{ h.return_date.strftime('%Y-%m-%d') if h.return_date else 'N/A' }}</td>
+                    <td>
+                      {% if h.action_type == 'Approved' %}
+                        <span class="badge badge-approved">Approved</span>
+                      {% elif h.action_type == 'Rejected' %}
+                        <span class="badge badge-rejected">Rejected</span>
+                      {% elif h.action_type == 'Returned' %}
+                        <span class="badge badge-returned">Returned</span>
+                      {% else %}
+                        <span class="badge bg-secondary">Unknown</span>
+                      {% endif %}
+                    </td>
+                    <td>{{ h.reason or 'N/A' }}</td>
+                  </tr>
+                  {% endfor %}
+                </tbody>
+              </table>
             </div>
           </div>
+        </div>
+      </div>
+    
+      <!-- Account Restrictions Tab -->
+      <div class="tab-pane fade" id="restrictions" role="tabpanel">
+        <div class="table-responsive">
+          <table class="table table-bordered table-hover align-middle">
+            <thead class="table-light">
+              <tr>
+                <th>Resident</th>
+                <th>Type</th>
+                <th>Reason</th>
+                <th>Action</th>
+                <th>Date</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for r in restriction_logs %}
+              <tr>
+                <td>{{ r.resident_name }}</td>
+                <td>{{ r.type }}</td>
+                <td>{{ r.reason }}</td>
+                <td>{{ r.action_type }}</td>
+                <td>{{ r.action_date.strftime('%Y-%m-%d') if r.action_date else 'N/A' }}</td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+    
+        <!-- Summary -->
+        <h5 class="mt-4">Restriction Summary</h5>
+        <table class="table table-bordered align-middle">
+          <thead>
+            <tr>
+              <th>Resident</th>
+              <th>Total Restrictions</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for resident, count in restriction_summary.items() %}
+            <tr>
+              <td>{{ resident }}</td>
+              <td>{{ count }}</td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
 
-          <br>
-          <div class="table-responsive" id="exportSection">
-            <table id="historyTable" class="table table-hover table-bordered align-middle">
-              <thead class="table-light">
-                <tr>
-                  <th>Type</th>
-                  <th>Resident</th>
-                  <th>Item</th>
-                  <th>Quantity</th>
-                  <th>Purpose</th>
-                  <th id="dateFromHeader">Borrow Date</th>
-                  <th id="dateToHeader">Return Date</th>
-                  <th>Status</th>
-                  <th>Reason</th>
-                </tr>
-              </thead>
-              <tbody>
-                <!-- Restriction logs -->
-                {% for h in restriction_logs %}
-                <tr class="export-visible">
-                  <td>{{ h.type }}</td>
-                  <td>{{ h.resident_name or 'N/A' }}</td>
-                  <td>{{ h.item or 'N/A' }}</td>
-                  <td>{{ h.quantity or 'N/A' }}</td>
-                  <td>{{ h.purpose or 'N/A' }}</td>
-                  <td>{{ h.borrow_date.strftime('%Y-%m-%d') if h.borrow_date else 'N/A' }}</td>
-                  <td>{{ h.return_date.strftime('%Y-%m-%d') if h.return_date else 'N/A' }}</td>
-                  <td>
-                    {% if h.action_type == 'Approved' %}
-                      <span class="badge badge-approved">Approved</span>
-                    {% elif h.action_type == 'Rejected' %}
-                      <span class="badge badge-rejected">Rejected</span>
-                    {% elif h.action_type == 'Returned' %}
-                      <span class="badge badge-returned">Returned</span>
-                    {% else %}
-                      <span class="badge bg-secondary">Unknown</span>
-                    {% endif %}
-                  </td>
-                  <td>{{ h.reason or 'N/A' }}</td>
-                </tr>
-                {% endfor %}
-              
-                <!-- Other logs (Borrowings & Reservations) -->
-                {% for h in other_logs %}
-                <tr class="export-visible">
-                  <td>{{ h.type }}</td>
-                  <td>{{ h.resident_name or 'N/A' }}</td>
-                  <td>{{ h.item or 'N/A' }}</td>
-                  <td>{{ h.quantity or 'N/A' }}</td>
-                  <td>{{ h.purpose or 'N/A' }}</td>
-                  <td>{{ h.borrow_date.strftime('%Y-%m-%d') if h.borrow_date else 'N/A' }}</td>
-                  <td>{{ h.return_date.strftime('%Y-%m-%d') if h.return_date else 'N/A' }}</td>
-                  <td>
-                    {% if h.action_type == 'Approved' %}
-                      <span class="badge badge-approved">Approved</span>
-                    {% elif h.action_type == 'Rejected' %}
-                      <span class="badge badge-rejected">Rejected</span>
-                    {% elif h.action_type == 'Returned' %}
-                      <span class="badge badge-returned">Returned</span>
-                    {% else %}
-                      <span class="badge bg-secondary">Unknown</span>
-                    {% endif %}
-                  </td>
-                  <td>{{ h.reason or 'N/A' }}</td>
-                </tr>
-                {% endfor %}
-              
-                {% if restriction_logs|length + other_logs|length == 0 %}
-                <tr><td colspan="9" class="text-center text-muted">No history records available.</td></tr>
-                {% endif %}
-              </tbody>
-
-            </table>
-          </div>
         </div>
       </div>
     </main>
