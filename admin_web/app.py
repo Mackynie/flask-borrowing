@@ -192,6 +192,13 @@ class Resident(db.Model):
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
 
 
+class AdminActivity(db.Model):
+    __tablename__ = 'admin_activity'
+    id = db.Column(db.Integer, primary_key=True)
+    action = db.Column(db.text, nullable=False)
+    timestamp = db.Column(db.DateTime, default=datetime.utcnow)
+
+
 
 
 
@@ -1791,14 +1798,27 @@ def admin_account():
         admin.email = request.form['email']
         password = request.form['password']
         if password:
-            admin.password = generate_password_hash(password)
+            admin.password_hash = generate_password_hash(password)
         db.session.commit()
+
+        # Log the update action
+        new_activity = AdminActivity(
+            admin_id=admin.id,
+            action="Updated personal details"
+        )
+        db.session.add(new_activity)
+        db.session.commit()
+
         flash('Account updated successfully!', 'success')
         return redirect(url_for('admin_account'))
 
-    # Comment out activity logs for now
-    # activity_logs = get_admin_logs(admin.id)
-    return render_template('admin_account.html', admin=admin)  # remove activity_logs
+    # Get the last 5 activities
+    activities = AdminActivity.query.filter_by(admin_id=admin.id)\
+        .order_by(AdminActivity.timestamp.desc()).limit(5).all()
+
+    return render_template('admin_account.html', admin=admin, activities=activities)
+
+
 
 
 if __name__ == '__main__':
