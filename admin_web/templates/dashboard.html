@@ -84,6 +84,33 @@
         </div>
       </div>
 
+      <!-- Assets Overview -->
+      <div class="card shadow-sm mb-4" data-aos="fade-up">
+        <div class="card-body">
+          <h5>Assets Overview</h5>
+          <table class="table table-striped table-hover align-middle">
+            <thead class="table-light">
+              <tr>
+                <th>Asset Name</th>
+                <th>Total Quantity</th>
+                <th>Available</th>
+                <th>Active Borrowed</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for asset in assets %}
+              <tr>
+                <td>{{ asset.name }}</td>
+                <td>{{ asset.quantity }}</td>
+                <td>{{ asset.available_quantity }}</td>
+                <td>{{ asset.active_borrowed }}</td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+
       <!-- Tabs -->
       <ul class="nav nav-tabs mb-3" id="dataTabs" role="tablist" data-aos="fade-in">
         <li class="nav-item"><a class="nav-link active" id="pending-tab" data-bs-toggle="tab" href="#pending" role="tab">Pending</a></li>
@@ -145,6 +172,7 @@
                     <th>Item</th>
                     <th>Quantity</th>
                     <th>Purpose</th>
+                    <th>Borrow Date</th>
                     <th>Request Date</th>
                     <th>Return Date</th>
                     <th>Status</th>
@@ -158,6 +186,7 @@
                     <td>{{ b.item }}</td>
                     <td>{{ b.quantity }}</td>
                     <td>{{ b.purpose }}</td>
+                    <td>{{ b.borrow_date.strftime('%Y-%m-%d') if b.borrow_date else 'N/A' }}</td>
                     <td>{{ b.request_date.strftime('%Y-%m-%d %I:%M %p') }}</td>
                     <td>{{ b.return_date.strftime('%Y-%m-%d %I:%M %p') }}</td>
                     <td><span class="badge bg-warning text-dark">{{ b.status }}</span></td>
@@ -188,6 +217,7 @@
                     <th>Item</th>
                     <th>Quantity</th>
                     <th>Purpose</th>
+                    <th>Borrow Date</th>
                     <th>Request Date</th>
                     <th>Return Date</th>
                     <th>Status</th>
@@ -201,6 +231,7 @@
                     <td>{{ b.item }}</td>
                     <td>{{ b.quantity }}</td>
                     <td>{{ b.purpose }}</td>
+                    <td>{{ b.borrow_date.strftime('%Y-%m-%d') if b.borrow_date else 'N/A' }}</td>
                     <td>{{ b.request_date.strftime('%Y-%m-%d %I:%M %p') }}</td>
                     <td>{{ b.return_date.strftime('%Y-%m-%d %I:%M %p') }}</td>
                     <td>
@@ -258,101 +289,59 @@
 <script>
   AOS.init({ duration: 800, once: true });
 
-  // Auto-close flash messages
   document.addEventListener("DOMContentLoaded", function() {
-    var alerts = document.querySelectorAll('.alert');
-    alerts.forEach(function(alert) {
-      setTimeout(function() {
-        var bsAlert = bootstrap.Alert.getOrCreateInstance(alert);
-        bsAlert.close();
-      }, 4000);
+    document.querySelectorAll('.alert').forEach(alert => {
+      setTimeout(() => bootstrap.Alert.getOrCreateInstance(alert).close(), 4000);
     });
   });
 
   function openRejectModal(type, id) {
     const form = document.getElementById("rejectForm");
     const title = document.getElementById("rejectTitle");
-    if (type === "reservation") {
-      form.action = `/reject_reservation/${id}`;
-      title.innerText = "Reject Reservation";
-    } else if (type === "borrowing") {
-      form.action = `/reject_borrowing/${id}`;
-      title.innerText = "Reject Borrowing";
-    }
+    form.action = type === "reservation" ? `/reject_reservation/${id}` : `/reject_borrowing/${id}`;
+    title.innerText = type === "reservation" ? "Reject Reservation" : "Reject Borrowing";
     document.getElementById("reason").value = "";
-    const modal = new bootstrap.Modal(document.getElementById('rejectModal'));
-    modal.show();
+    new bootstrap.Modal(document.getElementById('rejectModal')).show();
   }
 
   function formatTime12(dateTimeStr) {
     const dateObj = new Date(dateTimeStr);
+    if (isNaN(dateObj)) return "N/A";
     let hours = dateObj.getHours();
     const minutes = dateObj.getMinutes().toString().padStart(2, '0');
     const ampm = hours >= 12 ? 'PM' : 'AM';
-    hours = hours % 12;
-    hours = hours ? hours : 12;
+    hours = hours % 12 || 12;
     const date = dateObj.toISOString().split('T')[0];
     return `${date} ${hours}:${minutes} ${ampm}`;
   }
 
   function fetchUpdates() {
     fetch('/api/dashboard_data')
-      .then(response => response.json())
+      .then(r => r.json())
       .then(data => {
         document.getElementById("totalAssets").innerText = data.assets;
         document.getElementById("totalResidents").innerText = data.residents;
         document.getElementById("pendingRequests").innerText = data.pending;
 
-        // Pending Reservations
-        const resCard = document.getElementById("pendingReservationsCard");
-        const resBody = document.getElementById("pendingReservationsBody");
-        if(data.pending_reservations.length > 0){
-          resCard.style.display = "block";
-          resBody.innerHTML = "";
-          data.pending_reservations.forEach(r => {
-            resBody.innerHTML += `<tr>
-              <td>${r.resident_name}</td>
-              <td>${r.item}</td>
-              <td>${r.purpose || ""}</td>
-              <td>${formatTime12(r.reservation_start)}</td>
-              <td>${formatTime12(r.reservation_end)}</td>
-              <td><span class="badge bg-warning text-dark">${r.status}</span></td>
-              <td>
-                <a href="/approve_reservation/${r.id}" class="btn btn-sm btn-success">Approve</a>
-                <button class="btn btn-sm btn-danger" onclick="openRejectModal('reservation', ${r.id})">Reject</button>
-              </td>
-            </tr>`;
-          });
-        } else {
-          resCard.style.display = "none";
-        }
-
-        // Pending Borrowings
-        const borCard = document.getElementById("pendingBorrowingsCard");
         const borBody = document.getElementById("pendingBorrowingsBody");
-        if(data.pending_borrowings.length > 0){
-          borCard.style.display = "block";
-          borBody.innerHTML = "";
-          data.pending_borrowings.forEach(b => {
-            borBody.innerHTML += `<tr>
-              <td>${b.resident_name}</td>
-              <td>${b.item}</td>
-              <td>${b.quantity}</td>
-              <td>${b.purpose || ""}</td>
-              <td>${formatTime12(b.request_date)}</td>
-              <td>${formatTime12(b.return_date)}</td>
-              <td><span class="badge bg-warning text-dark">${b.status}</span></td>
-              <td>
-                <a href="/approve_borrowing/${b.id}" class="btn btn-sm btn-success">Approve</a>
-                <button class="btn btn-sm btn-danger" onclick="openRejectModal('borrowing', ${b.id})">Reject</button>
-              </td>
-            </tr>`;
-          });
-        } else {
-          borCard.style.display = "none";
-        }
+        borBody.innerHTML = "";
+        data.pending_borrowings.forEach(b => {
+          borBody.innerHTML += `<tr>
+            <td>${b.resident_name}</td>
+            <td>${b.item}</td>
+            <td>${b.quantity}</td>
+            <td>${b.purpose || ""}</td>
+            <td>${b.borrow_date ? formatTime12(b.borrow_date) : "N/A"}</td>
+            <td>${formatTime12(b.request_date)}</td>
+            <td>${formatTime12(b.return_date)}</td>
+            <td><span class="badge bg-warning text-dark">${b.status}</span></td>
+            <td>
+              <a href="/approve_borrowing/${b.id}" class="btn btn-sm btn-success">Approve</a>
+              <button class="btn btn-sm btn-danger" onclick="openRejectModal('borrowing', ${b.id})">Reject</button>
+            </td>
+          </tr>`;
+        });
 
-        // Active Borrowings
         const activeBody = document.getElementById("activeTableBody");
         activeBody.innerHTML = "";
         data.active_borrowings.forEach(b => {
@@ -361,17 +350,19 @@
             <td>${b.item}</td>
             <td>${b.quantity}</td>
             <td>${b.purpose || ""}</td>
+            <td>${b.borrow_date ? formatTime12(b.borrow_date) : "N/A"}</td>
             <td>${formatTime12(b.request_date)}</td>
             <td>${formatTime12(b.return_date)}</td>
             <td>${b.status === "Return Requested" ? '<span class="badge bg-info text-dark">Return Requested</span>' : '<span class="badge bg-success">Approved</span>'}</td>
-            <td>${b.status === "Return Requested" ?
-              `<form method="POST" action="/admin/approve-return/${b.id}">
-                <button type="submit" class="btn btn-sm btn-primary">Approve Return</button>
-              </form>` : '<span class="text-muted">No action</span>'}</td>
+            <td>${b.status === "Return Requested"
+              ? `<form method="POST" action="/admin/approve-return/${b.id}">
+                  <button type="submit" class="btn btn-sm btn-primary">Approve Return</button>
+                </form>`
+              : '<span class="text-muted">No action</span>'}
+            </td>
           </tr>`;
         });
-      })
-      .catch(err => console.error("Error fetching data:", err));
+      });
   }
   setInterval(fetchUpdates, 5000);
 </script>
