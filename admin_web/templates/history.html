@@ -90,8 +90,6 @@
             <option value="Approved">Approved</option>
             <option value="Rejected">Rejected</option>
             <option value="Returned">Returned</option>
-            <option value="Automatically Restricted">Automatically Restricted</option>
-            <option value="Manually Restricted">Manually Restricted</option>
           </select>
         </div>
       </div>
@@ -132,18 +130,21 @@
                 <tr class="export-visible">
                   <td>{{ h.type }}</td>
                   <td>{{ h.resident_name }}</td>
-                  <td>{% if h.type == 'Account Restriction' %}N/A{% else %}{{ h.item }}{% endif %}</td>
-                  <td>{% if h.type == 'Account Restriction' %}N/A{% else %}{{ h.quantity or 'N/A' }}{% endif %}</td>
-                  <td>{% if h.type == 'Account Restriction' %}{{ h.reason }}{% else %}{{ h.purpose or h.reason }}{% endif %}</td>
+                  <td>{{ h.item }}</td>
+                  <td>{{ h.quantity or 'N/A' }}</td>
+                  <td>{{ h.purpose or 'N/A' }}</td>
                   <td>{{ h.borrow_date.strftime('%Y-%m-%d') if h.borrow_date else 'N/A' }}</td>
                   <td>{{ h.return_date.strftime('%Y-%m-%d') if h.return_date else 'N/A' }}</td>
                   <td>
-                    {% if h.action_type == 'Approved' %}<span class="badge badge-approved">Approved</span>
-                    {% elif h.action_type == 'Rejected' %}<span class="badge badge-rejected">Rejected</span>
-                    {% elif h.action_type == 'Returned' %}<span class="badge badge-returned">Returned</span>
-                    {% elif h.action_type in ['Automatically Restricted','Manually Restricted'] %}
-                      <span class="badge bg-warning text-dark">{{ h.action_type }}</span>
-                    {% else %}<span class="badge bg-secondary">Unknown</span>{% endif %}
+                    {% if h.action_type == 'Approved' %}
+                      <span class="badge badge-approved">Approved</span>
+                    {% elif h.action_type == 'Rejected' %}
+                      <span class="badge badge-rejected">Rejected</span>
+                    {% elif h.action_type == 'Returned' %}
+                      <span class="badge badge-returned">Returned</span>
+                    {% else %}
+                      <span class="badge bg-secondary">Unknown</span>
+                    {% endif %}
                   </td>
                   <td>{{ h.reason or 'N/A' }}</td>
                 </tr>
@@ -179,27 +180,34 @@ function applyFilters() {
   const { search, date, status, type } = getFilterInfo();
   const searchTerm = search.toLowerCase();
   const rows = document.querySelectorAll('#historyTable tbody tr');
+  let visibleCount = 0;
+
   rows.forEach(row => {
     const cells = row.querySelectorAll('td');
     const rowText = row.textContent.toLowerCase();
     const rowDate = cells[5]?.textContent.trim().split(' ')[0];
     const rowStatus = cells[7]?.textContent.trim();
     const rowType = cells[0]?.textContent.trim();
-    const visible = 
-      (search === 'All' || rowText.includes(searchTerm)) &&
-      (date === 'All' || rowDate === date) &&
-      (status === 'All' || rowStatus.includes(status)) &&
-      (type === 'All' || rowType === type);
+
+    const matchesSearch = search === 'All' || rowText.includes(searchTerm);
+    const matchesDate = date === 'All' || rowDate === date;
+    const matchesStatus = status === 'All' || rowStatus.includes(status);
+    const matchesType = type === 'All' || rowType === type;
+
+    const visible = matchesSearch && matchesDate && matchesStatus && matchesType;
     row.style.display = visible ? '' : 'none';
     row.classList.toggle('export-visible', visible);
+    if (visible) visibleCount++;
   });
 }
 
 function filterByType(type) {
   currentTypeFilter = type;
   applyFilters();
+
   const fromHeader = document.getElementById('dateFromHeader');
   const toHeader = document.getElementById('dateToHeader');
+
   if (type === 'Reservation') {
     fromHeader.textContent = 'Reserved Date From';
     toHeader.textContent = 'Reserved Date To';
@@ -217,7 +225,6 @@ document.getElementById('dateFilter').addEventListener('change', applyFilters);
 document.getElementById('statusFilter').addEventListener('change', applyFilters);
 applyFilters();
 
-/* Export & Print Scripts (unchanged) */
 async function toBase64(url) {
   const response = await fetch(url, {cache: "no-store"});
   const blob = await response.blob();
@@ -231,7 +238,9 @@ async function toBase64(url) {
 async function buildExportHeader() {
   const pob5Logo = await toBase64("{{ url_for('static', filename='img/POB5.jpg') }}");
   const barmaLogo = await toBase64("{{ url_for('static', filename='img/logo3.png') }}");
-  return `<div style="position: relative; text-align: center; margin-bottom: 8px; height: 100px;">
+
+  return `
+    <div style="position: relative; text-align: center; margin-bottom: 8px; height: 100px;">
       <img src="${pob5Logo}" style="position: absolute; left: 0; top: 40%; transform: translateY(-50%); height: 60px;" />
       <img src="${barmaLogo}" style="position: absolute; right: 0; top: 40%; transform: translateY(-50%); height: 100px;" />
       <div style="position: relative; z-index: 1;">
@@ -240,7 +249,8 @@ async function buildExportHeader() {
         <div style="font-size:11px; margin-top:2px;">BARMA</div>
         <div style="margin:6px auto 0; width: 75%; border-top:1px solid #000;"></div>
       </div>
-    </div>`;
+    </div>
+  `;
 }
 
 function buildReportTitle() {
@@ -260,28 +270,39 @@ function buildReportTitle() {
 function buildExportFooter() {
   const today = new Date().toLocaleDateString();
   const printedBy = "{{ username }}";
-  return `<div style="font-size:12px; margin-top:12px; display:flex; justify-content:space-between;">
+  return `
+    <div style="font-size:12px; margin-top:12px; display:flex; justify-content:space-between;">
       <div>Print date: ${today}</div>
       <div>Printed by: ${printedBy}</div>
-    </div>`;
+    </div>
+  `;
 }
 
 async function exportFilteredToPDF() {
   const rows = document.querySelectorAll('#historyTable tbody tr.export-visible');
   if (!rows.length) return alert('No visible records to export.');
+  
   const header = await buildExportHeader();
   const tableClone = document.getElementById('historyTable').cloneNode(true);
   const tbody = tableClone.querySelector('tbody');
   Array.from(tbody.rows).forEach(r => { if (!r.classList.contains('export-visible')) tbody.removeChild(r); });
+
   tableClone.style.borderCollapse = 'collapse';
-  tableClone.querySelectorAll('th,td').forEach(c => { c.style.border = '0.5px solid black'; c.style.padding = '4px'; c.style.textAlign = 'center'; c.style.fontSize = '12px'; });
+  tableClone.querySelectorAll('th,td').forEach(c => {
+    c.style.border = '0.5px solid black';
+    c.style.padding = '4px';
+    c.style.textAlign = 'center';
+    c.style.fontSize = '12px';
+  });
   tableClone.querySelectorAll('th').forEach(c => c.style.fontWeight = 'bold');
+
   const container = document.createElement('div');
   container.innerHTML = header + buildReportTitle();
   container.appendChild(tableClone);
   const footer = document.createElement('div');
   footer.innerHTML = buildExportFooter();
   container.appendChild(footer);
+
   html2pdf().from(container).set({
     margin: [0.5, 0.5, 0.5, 0.5],
     filename: 'BARMA-History-Report.pdf',
@@ -294,6 +315,7 @@ async function exportFilteredToPDF() {
 async function printReport() {
   const rows = document.querySelectorAll('#historyTable tbody tr.export-visible');
   if (!rows.length) return alert('No visible records to print.');
+
   const header = await buildExportHeader();
   const title = buildReportTitle();
   const footer = buildExportFooter();
@@ -301,16 +323,37 @@ async function printReport() {
   Array.from(tableClone.querySelectorAll('tbody tr')).forEach(r => { 
     if (!r.classList.contains('export-visible')) r.remove(); 
   });
-  const style = `<style>
+
+  const style = `
+    <style>
       body { font-family: Arial, sans-serif; padding: 20px; color: #000; }
       table { border-collapse: collapse; width: 100%; margin-top: 8px; }
       th, td { border: 0.5px solid black; padding: 4px; text-align: center; font-size: 12px; }
       th { font-weight: bold; }
-    </style>`;
+    </style>
+  `;
+
   const printWindow = window.open('', '_blank', 'width=800,height=600');
-  printWindow.document.write(`<html><head><title>Print</title>${style}</head><body>${header}${title}${tableClone.outerHTML}${footer}</body></html>`);
+  printWindow.document.write(`
+    <html>
+      <head>
+        <title>Print</title>
+        ${style}
+      </head>
+      <body>
+        ${header}
+        ${title}
+        ${tableClone.outerHTML}
+        ${footer}
+      </body>
+    </html>
+  `);
   printWindow.document.close();
-  printWindow.onload = () => { printWindow.focus(); printWindow.print(); };
+
+  printWindow.onload = () => {
+    printWindow.focus();
+    printWindow.print();
+  };
 }
 </script>
 </body>
