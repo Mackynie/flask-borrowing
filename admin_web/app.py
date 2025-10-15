@@ -1816,22 +1816,31 @@ def edit_resident(id):
 
     return redirect(url_for('manage_accounts'))
 
-
 @app.route('/admin_account', methods=['GET', 'POST'])
 def admin_account():
     admin = Admin.query.filter_by(id=session['admin_id']).first()
     
     if request.method == 'POST':
         admin.full_name = request.form['full_name']
-        password = request.form['password']
+        admin.username = request.form['username']
+        admin.position = request.form['position']
+
+        password = request.form.get('password')
         if password:
+            # Password validation
+            pattern = r'^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$'
+            if not re.match(pattern, password):
+                flash("Password must be at least 8 characters long and include uppercase, lowercase, number, and special character.", "danger")
+                return redirect(url_for('admin_account'))
+
             admin.password_hash = generate_password_hash(password)
+        
         db.session.commit()
 
         # Log the update action
         new_activity = AdminActivity(
             admin_id=admin.id,
-            action="Updated personal details"
+            action=f"Updated personal details (Name, Username, Position{', Password' if password else ''})"
         )
         db.session.add(new_activity)
         db.session.commit()
