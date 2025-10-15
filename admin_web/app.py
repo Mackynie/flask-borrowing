@@ -251,8 +251,8 @@ class History(db.Model):
     purpose = db.Column(db.String(200))  # ➕ Add this
     action_type = db.Column(db.String(50))  # 'Approved', 'Rejected', 'Returned'
     action_date = db.Column(db.DateTime, default=datetime.utcnow)
-    borrow_date = db.Column(db.Date, nullable=True)
-    return_date = db.Column(db.Date, nullable=True)
+    borrow_date = db.Column(db.DateTime, nullable=True)  # ✅ changed to DateTime
+    return_date = db.Column(db.DateTime, nullable=True)  # ✅ changed to DateTime
     reason = db.Column(db.String(255), nullable=True)
 
 
