@@ -273,76 +273,79 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
 <script src="https://unpkg.com/aos@2.3.1/dist/aos.js"></script>
 <script>
+  
   AOS.init();
-  let currentTypeFilter = '';
+let currentTypeFilter = '';
 
-  function getFilterInfo() {
-    const search = document.getElementById('searchInput').value || 'All';
-    const date = document.getElementById('dateFilter').value || 'All';
-    const status = document.getElementById('statusFilter').value || 'All';
-    const type = currentTypeFilter || 'All';
-    return { search, date, status, type };
+function getFilterInfo() {
+  const search = document.getElementById('searchInput')?.value.trim().toLowerCase() || '';
+  const date = document.getElementById('dateFilter')?.value || '';
+  const status = document.getElementById('statusFilter')?.value || '';
+  return { search, date, status, type: currentTypeFilter };
+}
+
+// Unified filter function
+function applyFilters(tableId) {
+  const { search, date, status, type } = getFilterInfo();
+  const table = document.getElementById(tableId);
+  const rows = table.querySelectorAll('tbody tr');
+  let visibleCount = 0;
+
+  rows.forEach(row => {
+    if (row.id && row.id.startsWith('no')) return;
+
+    const cells = row.querySelectorAll('td');
+    let rowText = row.textContent.toLowerCase();
+    let rowDate = cells[5]?.textContent.trim().split(' ')[0] || '';
+    let rowStatus = cells[7]?.textContent.trim() || '';
+    let rowType = cells[0]?.textContent.trim() || '';
+
+    const matchesSearch = !search || rowText.includes(search);
+    const matchesDate = !date || rowDate === date;
+    const matchesStatus = !status || rowStatus === status;
+    const matchesType = !type || rowType === type;
+
+    const visible = matchesSearch && matchesDate && matchesStatus && matchesType;
+    row.style.display = visible ? '' : 'none';
+    row.classList.toggle('export-visible', visible);
+    if (visible) visibleCount++;
+  });
+
+  const noRow = table.querySelector('tbody tr[id^="no"]');
+  if (noRow) noRow.style.display = visibleCount === 0 ? '' : 'none';
+}
+
+// Type filter
+function filterByType(type) {
+  currentTypeFilter = type;
+  applyFilters('historyTable');
+
+  const fromHeader = document.getElementById('dateFromHeader');
+  const toHeader = document.getElementById('dateToHeader');
+  if (type === 'Reservation') {
+    fromHeader.textContent = 'Reserved Date From';
+    toHeader.textContent = 'Reserved Date To';
+  } else if (type === 'Borrowing') {
+    fromHeader.textContent = 'Borrow Date';
+    toHeader.textContent = 'Return Date';
+  } else {
+    fromHeader.textContent = 'Date From';
+    toHeader.textContent = 'Date To';
   }
+}
 
-  function applyFilters() {
-    const { search, date, status, type } = getFilterInfo();
-    const searchTerm = search.toLowerCase();
-    const rows = document.querySelectorAll('#historyTable tbody tr.export-visible');
-    let visibleCount = 0;
+// Event listeners
+['searchInput','dateFilter','statusFilter'].forEach(id => {
+  const el = document.getElementById(id);
+  if(el) el.addEventListener(id==='searchInput'?'input':'change', () => applyFilters('historyTable'));
+});
 
-    rows.forEach(row => {
-      if (row.id === 'noRecordsRow') return;
-      const cells = row.querySelectorAll('td');
-      const rowText = row.textContent.toLowerCase();
-      const rowDate = cells[5]?.textContent.trim().split(' ')[0];
-      const rowStatus = cells[7]?.textContent.trim();
-      const rowType = cells[0]?.textContent.trim();
+// Initialize restrictions visibility
+function updateRestrictionsVisibility() {
+  applyFilters('restrictionsTable');
+}
+updateRestrictionsVisibility();
 
-      const matchesSearch = search === 'All' || rowText.includes(searchTerm);
-      const matchesDate = date === 'All' || rowDate === date;
-      const matchesStatus = status === 'All' || rowStatus.includes(status);
-      const matchesType = type === 'All' || rowType === type;
-
-      const visible = matchesSearch && matchesDate && matchesStatus && matchesType;
-      row.style.display = visible ? '' : 'none';
-      row.classList.toggle('export-visible', visible);
-      if (visible) visibleCount++;
-    });
-
-    document.getElementById('noRecordsRow').style.display = visibleCount === 0 ? '' : 'none';
-  }
-
-  function updateRestrictionsVisibility() {
-    const rows = document.querySelectorAll('#restrictionsTable tbody tr.export-visible');
-    let visibleCount = 0;
-
-    rows.forEach(row => {
-      if (row.id === 'noRestrictionsRow') return;
-      row.style.display = '';
-      visibleCount++;
-    });
-
-    document.getElementById('noRestrictionsRow').style.display = visibleCount === 0 ? '' : 'none';
-  }
-  updateRestrictionsVisibility();
-
-  function filterByType(type) {
-    currentTypeFilter = type;
-    applyFilters();
-    const fromHeader = document.getElementById('dateFromHeader');
-    const toHeader = document.getElementById('dateToHeader');
-
-    if (type === 'Reservation') {
-      fromHeader.textContent = 'Reserved Date From';
-      toHeader.textContent = 'Reserved Date To';
-    } else if (type === 'Borrowing') {
-      fromHeader.textContent = 'Borrow Date';
-      toHeader.textContent = 'Return Date';
-    } else {
-      fromHeader.textContent = 'Date From';
-      toHeader.textContent = 'Date To';
-    }
-  }
 
   document.getElementById('searchInput').addEventListener('input', applyFilters);
   document.getElementById('dateFilter').addEventListener('change', applyFilters);
