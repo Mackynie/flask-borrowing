@@ -193,11 +193,11 @@ class Resident(db.Model):
 
 
 class AdminActivity(db.Model):
-    __tablename__ = 'admin_activity'
-    id = db.Column(db.Integer, primary_key=True)
-    action = db.Column(db.text, nullable=False)
-    timestamp = db.Column(db.DateTime, default=datetime.utcnow)
+    __tablename__ = "admin_activities"
 
+    id = db.Column(db.Integer, primary_key=True)
+    action = db.Column(db.Text, nullable=False)  # <-- use Text, not text()
+    timestamp = db.Column(db.DateTime, default=datetime.utcnow)
 
 
 
