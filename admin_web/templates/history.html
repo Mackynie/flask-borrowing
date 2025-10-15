@@ -96,18 +96,6 @@
             </select>
           </div>
         </div>
-        
-        <!-- Export / Print buttons outside the tab -->
-      <div class="d-flex justify-content-end mb-3 screen-only">
-        <div class="btn-group">
-          <button class="btn btn-sm text-white" style="background-color: #b30000;" onclick="exportFilteredToPDF()">
-            <i class="bi bi-filetype-pdf me-1"></i> Export to PDF
-          </button>
-          <button class="btn btn-sm text-dark" style="background-color: #FFC100;" onclick="printReport()">
-            <i class="bi bi-printer me-1"></i> Print
-          </button>
-        </div>
-      </div>
 
 
         <br>
@@ -132,129 +120,161 @@
     <div class="tab-content" id="historyTabsContent">
       <!-- Borrowings & Reservations Tab -->
       <div class="tab-pane fade show active" id="logs" role="tabpanel">
-      
-        <!-- Only the type filter buttons inside the tab -->
-        <div class="mb-3">
-          <div class="btn-group">
-            <button class="btn btn-sm text-white" style="background-color: #a10b0b;" onclick="filterByType('Borrowing')">
-              <i class="bi bi-arrow-left-right me-1"></i> Borrowing
-            </button>
-            <button class="btn btn-sm text-white" style="background-color: #FF8A08;" onclick="filterByType('Reservation')">
-              <i class="bi bi-calendar-check me-1"></i> Reservation
-            </button>
-            <button class="btn btn-sm text-dark" style="background-color: #FFC100;" onclick="filterByType('')">
-              <i class="bi bi-list-ul me-1"></i> Show All
-            </button>
-          </div>
+      <!-- Type Filter Buttons -->
+      <div class="mb-3">
+        <div class="btn-group">
+          <button class="btn btn-sm text-white" style="background-color: #a10b0b;" onclick="filterByType('Borrowing')">
+            <i class="bi bi-arrow-left-right me-1"></i> Borrowing
+          </button>
+          <button class="btn btn-sm text-white" style="background-color: #FF8A08;" onclick="filterByType('Reservation')">
+            <i class="bi bi-calendar-check me-1"></i> Reservation
+          </button>
+          <button class="btn btn-sm text-dark" style="background-color: #FFC100;" onclick="filterByType('')">
+            <i class="bi bi-list-ul me-1"></i> Show All
+          </button>
         </div>
-      
-        <!-- Table -->
-        <div class="card shadow-sm mb-4" data-aos="fade-up">
-          <div class="card-body">
-            <div class="table-responsive" id="exportSection">
-              <table id="historyTable" class="table table-hover table-bordered align-middle">
-                <thead class="table-light">
-                  <tr>
-                    <th>Type</th>
-                    <th>Resident</th>
-                    <th>Item</th>
-                    <th>Quantity</th>
-                    <th>Purpose</th>
-                    <th id="dateFromHeader">Borrow Date</th>
-                    <th id="dateToHeader">Return Date</th>
-                    <th>Status</th>
-                    <th>Reason</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {% for h in other_logs %}
-                  <tr class="export-visible">
-                    <td>{{ h.type }}</td>
-                    <td>{{ h.resident_name or 'N/A' }}</td>
-                    <td>{{ h.item or 'N/A' }}</td>
-                    <td>{{ h.quantity or 'N/A' }}</td>
-                    <td>{{ h.purpose or 'N/A' }}</td>
-                    <td>{{ h.borrow_date.strftime('%Y-%m-%d') if h.borrow_date else 'N/A' }}</td>
-                    <td>{{ h.return_date.strftime('%Y-%m-%d') if h.return_date else 'N/A' }}</td>
-                    <td>
-                      {% if h.action_type == 'Approved' %}
-                        <span class="badge badge-approved">Approved</span>
-                      {% elif h.action_type == 'Rejected' %}
-                        <span class="badge badge-rejected">Rejected</span>
-                      {% elif h.action_type == 'Returned' %}
-                        <span class="badge badge-returned">Returned</span>
-                      {% else %}
-                        <span class="badge bg-secondary">Unknown</span>
-                      {% endif %}
-                    </td>
-                    <td>{{ h.reason or 'N/A' }}</td>
-                  </tr>
-                  {% endfor %}
-                </tbody>
-              </table>
-            </div>
+    
+        <!-- Export / Print Buttons -->
+        <div class="d-flex justify-content-end mt-2 screen-only">
+          <div class="btn-group">
+            <button class="btn btn-sm text-white" style="background-color: #b30000;" onclick="exportFilteredToPDF()">
+              <i class="bi bi-filetype-pdf me-1"></i> Export to PDF
+            </button>
+            <button class="btn btn-sm text-dark" style="background-color: #FFC100;" onclick="printReport()">
+              <i class="bi bi-printer me-1"></i> Print
+            </button>
           </div>
         </div>
       </div>
+    
+      <!-- Table -->
+      <div class="card shadow-sm mb-4" data-aos="fade-up">
+        <div class="card-body">
+          <div class="table-responsive" id="exportSection">
+            <table id="historyTable" class="table table-hover table-bordered align-middle">
+              <thead class="table-light">
+                <tr>
+                  <th>Type</th>
+                  <th>Resident</th>
+                  <th>Item</th>
+                  <th>Quantity</th>
+                  <th>Purpose</th>
+                  <th id="dateFromHeader">Borrow Date</th>
+                  <th id="dateToHeader">Return Date</th>
+                  <th>Status</th>
+                  <th>Reason</th>
+                </tr>
+              </thead>
+              <tbody id="historyTbody">
+                {% for h in other_logs %}
+                <tr class="export-visible">
+                  <td>{{ h.type }}</td>
+                  <td>{{ h.resident_name or 'N/A' }}</td>
+                  <td>{{ h.item or 'N/A' }}</td>
+                  <td>{{ h.quantity or 'N/A' }}</td>
+                  <td>{{ h.purpose or 'N/A' }}</td>
+                  <td>{{ h.borrow_date.strftime('%Y-%m-%d') if h.borrow_date else 'N/A' }}</td>
+                  <td>{{ h.return_date.strftime('%Y-%m-%d') if h.return_date else 'N/A' }}</td>
+                  <td>
+                    {% if h.action_type == 'Approved' %}
+                      <span class="badge badge-approved">Approved</span>
+                    {% elif h.action_type == 'Rejected' %}
+                      <span class="badge badge-rejected">Rejected</span>
+                    {% elif h.action_type == 'Returned' %}
+                      <span class="badge badge-returned">Returned</span>
+                    {% else %}
+                      <span class="badge bg-secondary">Unknown</span>
+                    {% endif %}
+                  </td>
+                  <td>{{ h.reason or 'N/A' }}</td>
+                </tr>
+                {% endfor %}
+                <!-- No records row -->
+                <tr id="noRecordsRow" style="display:none;">
+                  <td colspan="9" class="text-center text-muted">No records found.</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+
       
 
     
-             <!-- Account Restrictions Tab -->
-        <div class="tab-pane fade" id="restrictions" role="tabpanel">
-          <div class="card shadow-sm mb-4" data-aos="fade-up">
-            <div class="card-body">
-              <div class="table-responsive w-100">
-                <table class="table table-bordered table-hover align-middle mb-0">
-                  <thead class="table-light">
-                    <tr>
-                      <th>Resident</th>
-                      <th>Type</th>
-                      <th>Reason</th>
-                      <th>Action</th>
-                      <th>Date</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {% for r in restriction_logs %}
-                    <tr>
-                      <td>{{ r.resident_name }}</td>
-                      <td>{{ r.type }}</td>
-                      <td>{{ r.reason }}</td>
-                      <td>{{ r.action_type }}</td>
-                      <td>{{ r.action_date.strftime('%Y-%m-%d') if r.action_date else 'N/A' }}</td>
-                    </tr>
-                    {% endfor %}
-                  </tbody>
-                </table>
+            <div class="tab-pane fade" id="restrictions" role="tabpanel">
+            <!-- Export / Print Buttons -->
+            <div class="d-flex justify-content-end mb-2 screen-only">
+              <div class="btn-group">
+                <button class="btn btn-sm text-white" style="background-color: #b30000;" onclick="exportRestrictionsToPDF()">
+                  <i class="bi bi-filetype-pdf me-1"></i> Export to PDF
+                </button>
+                <button class="btn btn-sm text-dark" style="background-color: #FFC100;" onclick="printRestrictions()">
+                  <i class="bi bi-printer me-1"></i> Print
+                </button>
+              </div>
+            </div>
+          
+            <!-- Table -->
+            <div class="card shadow-sm mb-4" data-aos="fade-up">
+              <div class="card-body">
+                <div class="table-responsive w-100">
+                  <table id="restrictionsTable" class="table table-bordered table-hover align-middle mb-0">
+                    <thead class="table-light">
+                      <tr>
+                        <th>Resident</th>
+                        <th>Type</th>
+                        <th>Reason</th>
+                        <th>Action</th>
+                        <th>Date</th>
+                      </tr>
+                    </thead>
+                    <tbody id="restrictionsTbody">
+                      {% for r in restriction_logs %}
+                      <tr class="export-visible">
+                        <td>{{ r.resident_name }}</td>
+                        <td>{{ r.type }}</td>
+                        <td>{{ r.reason }}</td>
+                        <td>{{ r.action_type }}</td>
+                        <td>{{ r.action_date.strftime('%Y-%m-%d') if r.action_date else 'N/A' }}</td>
+                      </tr>
+                      {% endfor %}
+                      <!-- No records row -->
+                      <tr id="noRestrictionsRow" style="display:none;">
+                        <td colspan="5" class="text-center text-muted">No records found.</td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            </div>
+          
+            <!-- Summary Table -->
+            <h5 class="mt-4">Restriction Summary</h5>
+            <div class="card shadow-sm mb-4" data-aos="fade-up">
+              <div class="card-body">
+                <div class="table-responsive w-100">
+                  <table class="table table-bordered align-middle mb-0">
+                    <thead>
+                      <tr>
+                        <th>Resident</th>
+                        <th>Total Restrictions</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {% for resident, count in restriction_summary.items() %}
+                      <tr>
+                        <td>{{ resident }}</td>
+                        <td>{{ count }}</td>
+                      </tr>
+                      {% endfor %}
+                    </tbody>
+                  </table>
+                </div>
               </div>
             </div>
           </div>
-        
-          <!-- Summary Table -->
-          <h5 class="mt-4">Restriction Summary</h5>
-          <div class="card shadow-sm mb-4" data-aos="fade-up">
-            <div class="card-body">
-              <div class="table-responsive w-100">
-                <table class="table table-bordered align-middle mb-0">
-                  <thead>
-                    <tr>
-                      <th>Resident</th>
-                      <th>Total Restrictions</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {% for resident, count in restriction_summary.items() %}
-                    <tr>
-                      <td>{{ resident }}</td>
-                      <td>{{ count }}</td>
-                    </tr>
-                    {% endfor %}
-                  </tbody>
-                </table>
-              </div>
-            </div>
-          </div>
-        </div>
 
 
         </div>
@@ -282,10 +302,11 @@ function getFilterInfo() {
 function applyFilters() {
   const { search, date, status, type } = getFilterInfo();
   const searchTerm = search.toLowerCase();
-  const rows = document.querySelectorAll('#historyTable tbody tr');
+  const rows = document.querySelectorAll('#historyTable tbody tr.export-visible');
   let visibleCount = 0;
 
   rows.forEach(row => {
+    if (row.id === 'noRecordsRow') return; // skip the no records row
     const cells = row.querySelectorAll('td');
     const rowText = row.textContent.toLowerCase();
     const rowDate = cells[5]?.textContent.trim().split(' ')[0];
@@ -302,7 +323,28 @@ function applyFilters() {
     row.classList.toggle('export-visible', visible);
     if (visible) visibleCount++;
   });
+
+  // Show/hide "No records found" row
+  document.getElementById('noRecordsRow').style.display = visibleCount === 0 ? '' : 'none';
 }
+
+
+  function updateRestrictionsVisibility() {
+  const rows = document.querySelectorAll('#restrictionsTable tbody tr.export-visible');
+  let visibleCount = 0;
+
+  rows.forEach(row => {
+    if (row.id === 'noRestrictionsRow') return; // skip the no records row
+    // If you have filters, apply them here; for now, all rows visible
+    row.style.display = ''; // show all
+    visibleCount++;
+  });
+
+  // Show/hide "No records found" row
+  document.getElementById('noRestrictionsRow').style.display = visibleCount === 0 ? '' : 'none';
+}
+updateRestrictionsVisibility();
+
 
 function filterByType(type) {
   currentTypeFilter = type;
@@ -379,6 +421,82 @@ function buildExportFooter() {
       <div>Printed by: ${printedBy}</div>
     </div>
   `;
+}
+
+  async function exportRestrictionsToPDF() {
+  const rows = document.querySelectorAll('#restrictionsTable tbody tr.export-visible');
+  if (!rows.length) return alert('No visible records to export.');
+
+  const header = await buildExportHeader();
+  const tableClone = document.getElementById('restrictionsTable').cloneNode(true);
+  const tbody = tableClone.querySelector('tbody');
+  Array.from(tbody.rows).forEach(r => { if (!r.classList.contains('export-visible')) tbody.removeChild(r); });
+
+  tableClone.style.borderCollapse = 'collapse';
+  tableClone.querySelectorAll('th,td').forEach(c => {
+    c.style.border = '0.5px solid black';
+    c.style.padding = '4px';
+    c.style.textAlign = 'center';
+    c.style.fontSize = '12px';
+  });
+  tableClone.querySelectorAll('th').forEach(c => c.style.fontWeight = 'bold');
+
+  const container = document.createElement('div');
+  container.innerHTML = header + `<div style="text-align:center; margin:12px 0; font-weight:700; font-size:14px;">ACCOUNT RESTRICTIONS REPORT</div>`;
+  container.appendChild(tableClone);
+  const footer = document.createElement('div');
+  footer.innerHTML = buildExportFooter();
+  container.appendChild(footer);
+
+  html2pdf().from(container).set({
+    margin: [0.5, 0.5, 0.5, 0.5],
+    filename: 'BARMA-Restrictions-Report.pdf',
+    image: { type: 'jpeg', quality: 1 },
+    html2canvas: { scale: 2 },
+    jsPDF: { unit: 'in', format: 'letter', orientation: 'portrait' }
+  }).save();
+}
+
+async function printRestrictions() {
+  const rows = document.querySelectorAll('#restrictionsTable tbody tr.export-visible');
+  if (!rows.length) return alert('No visible records to print.');
+
+  const header = await buildExportHeader();
+  const tableClone = document.getElementById('restrictionsTable').cloneNode(true);
+  Array.from(tableClone.querySelectorAll('tbody tr')).forEach(r => { 
+    if (!r.classList.contains('export-visible')) r.remove(); 
+  });
+
+  const style = `
+    <style>
+      body { font-family: Arial, sans-serif; padding: 20px; color: #000; }
+      table { border-collapse: collapse; width: 100%; margin-top: 8px; }
+      th, td { border: 0.5px solid black; padding: 4px; text-align: center; font-size: 12px; }
+      th { font-weight: bold; }
+    </style>
+  `;
+
+  const printWindow = window.open('', '_blank', 'width=800,height=600');
+  printWindow.document.write(`
+    <html>
+      <head>
+        <title>Print</title>
+        ${style}
+      </head>
+      <body>
+        ${header}
+        <div style="text-align:center; margin:12px 0; font-weight:700; font-size:14px;">ACCOUNT RESTRICTIONS REPORT</div>
+        ${tableClone.outerHTML}
+        ${buildExportFooter()}
+      </body>
+    </html>
+  `);
+  printWindow.document.close();
+
+  printWindow.onload = () => {
+    printWindow.focus();
+    printWindow.print();
+  };
 }
 
 async function exportFilteredToPDF() {
