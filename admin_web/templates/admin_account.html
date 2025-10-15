@@ -26,6 +26,8 @@
     .card {
       border-radius: 12px;
       box-shadow: 0 6px 18px rgba(0,0,0,0.08);
+      max-width: 700px; /* Narrower card */
+      margin: 0 auto 30px auto; /* Center card */
     }
 
     .card h4 {
@@ -115,6 +117,20 @@
     <main class="col-md-10 ms-sm-auto px-4 mt-4">
       <h1 class="fw-bold mb-4 text-center" data-aos="fade-down">Admin Account</h1>
 
+      <!-- Flash Messages Above Card -->
+      <div class="col-md-8 mx-auto">
+        {% with messages = get_flashed_messages(with_categories=true) %}
+          {% if messages %}
+            {% for category, message in messages %}
+              <div class="alert alert-{{ category }} alert-dismissible fade show" role="alert">
+                {{ message }}
+                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+              </div>
+            {% endfor %}
+          {% endif %}
+        {% endwith %}
+      </div>
+
       <!-- Personal Details Card -->
       <div class="card p-4 mb-4">
         <div class="profile-avatar">
@@ -133,19 +149,7 @@
 
         <!-- Collapsible Update Form -->
         <div class="collapse mt-3" id="updateForm">
-          <div class="col-md-6 mx-auto">
-            <!-- Flash Messages -->
-            {% with messages = get_flashed_messages(with_categories=true) %}
-              {% if messages %}
-                {% for category, message in messages %}
-                  <div class="alert alert-{{ category }} alert-dismissible fade show" role="alert">
-                    {{ message }}
-                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-                  </div>
-                {% endfor %}
-              {% endif %}
-            {% endwith %}
-
+          <div class="col-md-8 mx-auto">
             <form method="POST" action="{{ url_for('admin_account') }}">
               <div class="mb-3">
                 <label class="form-label">Full Name</label>
