@@ -958,7 +958,15 @@ def manage_accounts():
     residents = Resident.query.filter_by(is_verified=True).all()
     pending_residents = Resident.query.filter_by(is_verified=False).all()
 
-    return render_template('manage_accounts.html', residents=residents, pending_residents=pending_residents)
+    # Get the admin name from session
+    admin = Admin.query.get(session['admin_id'])
+
+    return render_template(
+        'manage_accounts.html',
+        residents=residents,
+        pending_residents=pending_residents,
+        admin_name=admin.full_name  # <-- pass admin name here
+    )
 
 @app.route('/verify_resident/<int:id>', methods=['POST'])
 def verify_resident(id):
