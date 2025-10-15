@@ -230,9 +230,9 @@ setTimeout(() => {
   document.querySelectorAll('.alert').forEach(alert => new bootstrap.Alert(alert).close());
 }, 4000);
 
-// ✅ Print Report Function
-async function printReport() {
-  const headerHTML = `
+// ✅ Shared header/footer for both Print & PDF
+function buildExportHeader() {
+  return `
     <div style="text-align:center; margin-bottom:10px;">
       <img src="{{ url_for('static', filename='img/logo3.png') }}" style="height:60px; float:right;">
       <img src="{{ url_for('static', filename='img/POB5.jpg') }}" style="height:50px; float:left;">
@@ -242,19 +242,31 @@ async function printReport() {
       <hr style="border:1px solid #000; margin:5px 0;">
     </div>
   `;
-
-  const footerHTML = `
+}
+function buildReportTitle() {
+  return `<div style="text-align:center; font-weight:bold; margin-bottom:8px;">ASSETS LIST</div>`;
+}
+function buildExportFooter() {
+  return `
     <div style="font-size:12px; margin-top:8px; display:flex; justify-content:space-between;">
       <span>Print date: ${new Date().toLocaleDateString()}</span>
       <span>Printed by: ${adminName}</span>
     </div>
   `;
+}
 
+// ✅ Print Report Function
+async function printReport() {
+  const headerHTML = buildExportHeader();
+  const footerHTML = buildExportFooter();
   const tableClone = document.getElementById('assetsTable').cloneNode(true);
 
   // Remove the "Actions" column
   tableClone.querySelectorAll('thead th:last-child').forEach(th => th.remove());
-  tableClone.querySelectorAll('tbody tr').forEach(tr => tr.querySelector('td:last-child')?.remove());
+  tableClone.querySelectorAll('tbody tr').forEach(tr => {
+    const lastTd = tr.querySelector('td:last-child');
+    if(lastTd) lastTd.remove();
+  });
 
   // Apply simple print styling
   const style = `
@@ -279,6 +291,51 @@ async function printReport() {
     printWindow.print();
   };
 }
+
+// ✅ PDF Export Function
+async function exportFilteredToPDF() {
+  const rows = document.querySelectorAll('#assetsTable tbody tr.export-visible');
+  if (!rows.length) return alert('No visible records to export.');
+
+  const header = buildExportHeader();
+  const footer = buildExportFooter();
+  const tableClone = document.getElementById('assetsTable').cloneNode(true);
+
+  // Remove "Actions" column and hide non-visible rows
+  tableClone.querySelectorAll('thead th:last-child').forEach(th => th.remove());
+  tableClone.querySelectorAll('tbody tr').forEach(tr => {
+    if (!tr.classList.contains('export-visible')) tr.remove();
+    else tr.querySelector('td:last-child')?.remove();
+  });
+
+  // Style the cloned table
+  tableClone.style.borderCollapse = 'collapse';
+  tableClone.querySelectorAll('th, td').forEach(cell => {
+    cell.style.border = '0.5px solid black';
+    cell.style.color = 'black';
+    cell.style.padding = '4px';
+    cell.style.textAlign = 'center';
+    cell.style.fontSize = '12px';
+  });
+  tableClone.querySelectorAll('th').forEach(cell => cell.style.fontWeight = 'bold');
+
+  const container = document.createElement('div');
+  container.innerHTML = header + buildReportTitle();
+  container.appendChild(tableClone);
+  const footerDiv = document.createElement('div');
+  footerDiv.innerHTML = footer;
+  container.appendChild(footerDiv);
+
+  // Export to PDF
+  html2pdf().from(container).set({
+    margin: [0.5, 0.5, 0.5, 0.5],
+    filename: 'BARMA-Assets-Report.pdf',
+    image: { type: 'jpeg', quality: 1 },
+    html2canvas: { scale: 2 },
+    jsPDF: { unit: 'in', format: 'letter', orientation: 'portrait' }
+  }).save();
+}
 </script>
 </body>
 </html>
+
