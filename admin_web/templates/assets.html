@@ -33,7 +33,6 @@
         <li class="nav-item"><a class="nav-link" href="{{ url_for('dashboard') }}"><i class="bi bi-speedometer2 me-2"></i>Dashboard</a></li>
         <li class="nav-item"><a class="nav-link active" href="{{ url_for('assets_page') }}"><i class="bi bi-box-seam me-2"></i>Assets</a></li>
         <li class="nav-item"><a class="nav-link" href="{{ url_for('reservations_page') }}"><i class="bi bi-calendar-check me-2"></i>Reservations</a></li>
-        <li class="nav-item"><a class="nav-link" href="{{ url_for('borrowings_page') }}"><i class="bi bi-arrow-left-right me-2"></i>Borrowing</a></li>
         <li class="nav-item"><a class="nav-link" href="{{ url_for('manage_accounts') }}"><i class="bi bi-people-fill me-2"></i>Accounts</a></li>
         <li class="nav-item"><a class="nav-link" href="{{ url_for('history_page') }}"><i class="bi bi-clock-history me-2"></i>History</a></li>
         <li class="nav-item"><a class="nav-link" href="{{ url_for('help_page') }}"><i class="bi bi-question-circle me-2"></i>Guide</a></li>
@@ -81,9 +80,9 @@
           <!-- ✅ Column Filter Dropdown -->
           <select id="columnFilter" class="form-select form-select-sm ms-2" style="width:auto;">
             <option value="all">All Columns</option>
-            <option value="hideBorrowedAvailable">Hide Active Borrowed & Available</option>
-            <option value="hideTotalAvailable">Hide Total Quantity & Available</option>
-            <option value="hideTotalBorrowed">Hide Total Quantity & Borrowed</option>
+            <option value="hideBorrowedAvailable">Total Quantity Only (Hide Active Borrowed & Available)</option>
+            <option value="hideTotalAvailable">Active Borrowed Only (Hide Total Quantity & Available)</option>
+            <option value="hideTotalBorrowed">Available Quantity (Hide Total Quantity & Borrowed)</option>
           </select>
         </div>
       </div>
@@ -103,7 +102,7 @@
               <th>ID</th>
               <th>Asset Name</th>
               <th>Total Quantity</th>
-              <th>Available Assets</th>
+              <th>Available Quantity</th>
               <th>Active Borrowed</th>
               <th>Classification</th>
               <th>Actions</th>
