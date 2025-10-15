@@ -39,7 +39,7 @@
       color: var(--dark-red);
     }
 
-    .form-control:focus {
+    .form-control:focus, .form-select:focus {
       border-color: var(--orange);
       box-shadow: 0 0 5px rgba(255,101,0,0.4);
     }
@@ -137,6 +137,17 @@
             <div class="mb-3">
               <label class="form-label">Full Name</label>
               <input type="text" class="form-control" name="full_name" value="{{ admin.full_name }}" required>
+            </div>
+            <div class="mb-3">
+              <label class="form-label">Username</label>
+              <input type="text" class="form-control" name="username" value="{{ admin.username }}" required>
+            </div>
+            <div class="mb-3">
+              <label class="form-label">Position</label>
+              <select class="form-select" name="position" required>
+                <option value="Chairman" {% if admin.position == 'Chairman' %}selected{% endif %}>Chairman</option>
+                <option value="Secretary" {% if admin.position == 'Secretary' %}selected{% endif %}>Secretary</option>
+              </select>
             </div>
             <div class="mb-3">
               <label class="form-label">Change Password</label>
