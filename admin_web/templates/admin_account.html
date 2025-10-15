@@ -122,6 +122,7 @@
     <main class="col-md-10 ms-sm-auto px-4 mt-4">
       <h1 class="fw-bold mb-4 text-center" data-aos="fade-down">Admin Account</h1>
 
+      <!-- Personal Details Card -->
       <div class="card p-4 mb-4">
         <div class="profile-avatar">
           <i class="bi bi-person-fill"></i>
@@ -150,6 +151,23 @@
             <button type="submit" class="btn btn-custom btn-lg px-5">Update Details</button>
           </div>
         </form>
+      </div>
+
+      <!-- Recent Activity Card -->
+      <div class="card p-4 mb-4">
+        <h4 class="mb-3">Recent Activity</h4>
+        {% if activities %}
+          <ul class="list-group">
+            {% for activity in activities %}
+              <li class="list-group-item d-flex justify-content-between align-items-center">
+                {{ activity.action }}
+                <span class="badge bg-secondary rounded-pill">{{ activity.timestamp.strftime('%Y-%m-%d %H:%M') }}</span>
+              </li>
+            {% endfor %}
+          </ul>
+        {% else %}
+          <p class="text-muted">No recent activity found.</p>
+        {% endif %}
       </div>
 
     </main>
