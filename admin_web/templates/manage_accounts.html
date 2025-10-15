@@ -8,27 +8,12 @@
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css">
   <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
   <link rel="stylesheet" href="https://unpkg.com/aos@2.3.1/dist/aos.css" />
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
   <style>
-    .modal-body {
-      max-height: 70vh;
-      overflow-y: auto;
-    }
-
-    .modal-body img {
-      max-width: 100%;
-      height: auto;
-      display: block;
-      margin: 0 auto;
-      pointer-events: none;
-    }
-
-    .modal {
-      z-index: 1055 !important;
-    }
-
-    .modal-backdrop {
-      z-index: 1040 !important;
-    }
+    .modal-body { max-height: 70vh; overflow-y: auto; }
+    .modal-body img { max-width: 100%; height: auto; display: block; margin: 0 auto; pointer-events: none; }
+    .modal { z-index: 1055 !important; }
+    .modal-backdrop { z-index: 1040 !important; }
   </style>
 </head>
 <body>
@@ -50,12 +35,7 @@
         <li class="nav-item"><a class="nav-link" href="{{ url_for('borrowings_page') }}"><i class="bi bi-arrow-left-right me-2"></i>Borrowing</a></li>
         <li class="nav-item"><a class="nav-link active" href="{{ url_for('manage_accounts') }}"><i class="bi bi-people-fill me-2"></i>Accounts</a></li>
         <li class="nav-item"><a class="nav-link" href="{{ url_for('history_page') }}"><i class="bi bi-clock-history me-2"></i>History</a></li>
-        <li class="nav-item">
-            <a class="nav-link" href="{{ url_for('help_page') }}">
-                <i class="bi bi-question-circle me-2"></i>Guide
-            </a>
-        </li>
-
+        <li class="nav-item"><a class="nav-link" href="{{ url_for('help_page') }}"><i class="bi bi-question-circle me-2"></i>Guide</a></li>
         <li class="nav-item logout-btn mt-3 text-center">
           <a href="{{ url_for('logout') }}" class="btn btn-outline-light w-75"><i class="bi bi-box-arrow-right me-2"></i>Logout</a>
         </li>
@@ -93,7 +73,6 @@
                   <td>
                     {% if user.id_picture_path %}
                       <button class="btn btn-outline-primary btn-sm" data-bs-toggle="modal" data-bs-target="#previewIDModal{{ user.id }}">Preview</button>
-                      <a href="{{ url_for('static', filename=user.id_picture_path.split('static/')[-1]) }}" download class="btn btn-outline-secondary btn-sm">Download</a>
                     {% else %} No ID Uploaded {% endif %}
                   </td>
                   <td>
@@ -117,9 +96,13 @@
       <!-- Resident List -->
       <div class="card shadow-sm" data-aos="fade-up">
         <div class="card-body">
-          <h5 class="card-title mb-3">Resident List</h5>
-          <div class="mb-3 w-50">
-            <input type="text" id="searchInput" class="form-control" placeholder="Search resident name...">
+          <div class="d-flex justify-content-between mb-3">
+            <div class="w-50">
+              <input type="text" id="searchInput" class="form-control" placeholder="Search resident name...">
+            </div>
+            <button class="btn btn-danger btn-sm" onclick="exportResidentsToPDF()">
+              <i class="bi bi-filetype-pdf me-1"></i> Generate Residents Report
+            </button>
           </div>
           <div class="table-responsive">
             <table class="table table-hover table-bordered align-middle" id="residentTable">
@@ -130,7 +113,7 @@
                   <th>Phone</th>
                   <th>Username</th>
                   <th>Purok</th>
-                  <th class="text-center">Action</th>
+                  <th class="text-center">Actions</th>
                 </tr>
               </thead>
               <tbody>
@@ -142,6 +125,9 @@
                   <td>{{ r.username }}</td>
                   <td>{{ r.purok }}</td>
                   <td class="text-center">
+                    <button class="btn btn-warning btn-sm" data-bs-toggle="modal" data-bs-target="#editResidentModal{{ r.id }}">
+                      <i class="bi bi-pencil-square"></i> Edit
+                    </button>
                     {% if r.is_restricted %}
                       <a href="{{ url_for('restrict_resident', id=r.id) }}" class="btn btn-sm btn-outline-success">
                         <i class="bi bi-check-circle me-1"></i> Unrestrict
@@ -159,113 +145,42 @@
           </div>
         </div>
       </div>
-
     </main>
   </div>
 </div>
 
-<!-- All modals moved outside tables -->
-{% for user in pending_residents %}
-<!-- ID Preview Modal -->
-<div class="modal fade" id="previewIDModal{{ user.id }}" tabindex="-1">
-  <div class="modal-dialog modal-dialog-centered">
-    <div class="modal-content">
-      <div class="modal-header">
-        <h5 class="modal-title">ID Preview: {{ user.full_name }}</h5>
-        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-      </div>
-      <div class="modal-body text-center">
-        <img src="{{ url_for('static', filename=user.id_picture_path) }}">
-      </div>
-    </div>
-  </div>
-</div>
-
-<!-- Selfie Preview Modal -->
-<div class="modal fade" id="previewSelfieModal{{ user.id }}" tabindex="-1">
-  <div class="modal-dialog modal-dialog-centered">
-    <div class="modal-content">
-      <div class="modal-header">
-        <h5 class="modal-title">Selfie Preview: {{ user.full_name }}</h5>
-        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-      </div>
-      <div class="modal-body text-center">
-        <img src="{{ url_for('static', filename=user.selfie_picture_path) }}">
-      </div>
-    </div>
-  </div>
-</div>
-
-<!-- Verification Modal -->
-<div class="modal fade" id="verifyModal{{ user.id }}" tabindex="-1">
-  <div class="modal-dialog modal-dialog-centered">
-    <div class="modal-content">
-      <form action="{{ url_for('verify_resident', id=user.id) }}" method="POST">
-        <div class="modal-header">
-          <h5 class="modal-title">Confirm Verification</h5>
-          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-        </div>
-        <div class="modal-body">
-          Are you sure you want to <strong>verify</strong> <em>{{ user.full_name }}</em>?
-        </div>
-        <div class="modal-footer">
-          <button type="submit" class="btn btn-success">Yes, Verify</button>
-          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-        </div>
-      </form>
-    </div>
-  </div>
-</div>
-
-<!-- Rejection Modal -->
-<div class="modal fade" id="rejectModal{{ user.id }}" tabindex="-1">
-  <div class="modal-dialog modal-dialog-centered">
-    <div class="modal-content">
-      <form action="{{ url_for('reject_resident', id=user.id) }}" method="POST">
-        <div class="modal-header">
-          <h5 class="modal-title">Confirm Rejection</h5>
-          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-        </div>
-        <div class="modal-body">
-          Are you sure you want to <strong>reject</strong> <em>{{ user.full_name }}</em>? This will permanently delete their account.
-        </div>
-        <div class="modal-footer">
-          <button type="submit" class="btn btn-danger">Yes, Reject</button>
-          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-        </div>
-      </form>
-    </div>
-  </div>
-</div>
-{% endfor %}
-
+<!-- Edit Resident Modal -->
 {% for r in residents %}
-<!-- Resident ID Modal -->
-<div class="modal fade" id="residentIDModal{{ r.id }}" tabindex="-1">
-  <div class="modal-dialog modal-dialog-centered">
+<div class="modal fade" id="editResidentModal{{ r.id }}" tabindex="-1">
+  <div class="modal-dialog">
     <div class="modal-content">
-      <div class="modal-header">
-        <h5 class="modal-title">ID Preview: {{ r.full_name }}</h5>
-        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-      </div>
-      <div class="modal-body text-center">
-        <img src="{{ url_for('static', filename=r.id_picture_path) }}">
-      </div>
-    </div>
-  </div>
-</div>
-
-<!-- Resident Selfie Modal -->
-<div class="modal fade" id="residentSelfieModal{{ r.id }}" tabindex="-1">
-  <div class="modal-dialog modal-dialog-centered">
-    <div class="modal-content">
-      <div class="modal-header">
-        <h5 class="modal-title">Selfie Preview: {{ r.full_name }}</h5>
-        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-      </div>
-      <div class="modal-body text-center">
-        <img src="{{ url_for('static', filename=r.selfie_picture_path) }}">
-      </div>
+      <form method="POST" action="{{ url_for('edit_resident', id=r.id) }}">
+        <div class="modal-header">
+          <h5 class="modal-title">Edit Resident - {{ r.full_name }}</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body">
+          <div class="mb-3">
+            <label class="form-label">Full Name</label>
+            <input type="text" class="form-control" name="full_name" value="{{ r.full_name }}" required>
+          </div>
+          <div class="mb-3">
+            <label class="form-label">Username</label>
+            <input type="text" class="form-control" name="username" value="{{ r.username }}" required>
+          </div>
+          <div class="mb-3">
+            <label class="form-label">Phone Number</label>
+            <input type="text" class="form-control" name="phone_number" value="{{ r.phone_number }}" required>
+          </div>
+          <div class="mb-3">
+            <label class="form-label">Purok</label>
+            <input type="text" class="form-control" name="purok" value="{{ r.purok }}" required>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="submit" class="btn btn-primary"><i class="bi bi-save me-1"></i> Save Changes</button>
+        </div>
+      </form>
     </div>
   </div>
 </div>
@@ -274,19 +189,50 @@
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
 <script src="https://unpkg.com/aos@2.3.1/dist/aos.js"></script>
 <script>
-  AOS.init();
-  document.addEventListener('DOMContentLoaded', () => {
-    const searchInput = document.getElementById('searchInput');
-    const tableRows = document.querySelectorAll('#residentTable tbody tr');
-    searchInput.addEventListener('keyup', function () {
-      const query = this.value.toLowerCase();
-      tableRows.forEach(row => {
-        const name = row.cells[0]?.textContent.toLowerCase() || '';
-        row.style.display = name.includes(query) ? '' : 'none';
-      });
-    });
-  });
-</script>
+AOS.init();
 
+// ✅ Live Search Filter
+document.getElementById('searchInput').addEventListener('input', function() {
+  const filter = this.value.toLowerCase();
+  const rows = document.querySelectorAll('#residentTable tbody tr');
+  rows.forEach(row => {
+    const text = row.textContent.toLowerCase();
+    const visible = text.includes(filter);
+    row.style.display = visible ? '' : 'none';
+    row.classList.toggle('export-visible', visible);
+  });
+});
+
+// ✅ Export visible rows to PDF
+function exportResidentsToPDF() {
+  const rows = document.querySelectorAll('#residentTable tbody tr.export-visible, #residentTable tbody tr:not([style*="display: none"])');
+  if (!rows.length) return alert('No visible residents to export.');
+
+  const tableClone = document.getElementById('residentTable').cloneNode(true);
+  tableClone.querySelectorAll('thead th:last-child').forEach(th => th.remove());
+  tableClone.querySelectorAll('tbody tr').forEach(tr => {
+    const lastTd = tr.querySelector('td:last-child');
+    if (lastTd) lastTd.remove();
+    if (tr.style.display === 'none') tr.remove();
+  });
+
+  const container = document.createElement('div');
+  container.innerHTML = `
+    <div style="text-align:center;">
+      <h3>Barangay Poblacion 5 - Residents Report</h3>
+      <p>Generated on ${new Date().toLocaleDateString()}</p>
+      <hr>
+    </div>
+  `;
+  container.appendChild(tableClone);
+
+  html2pdf().from(container).set({
+    margin: 0.5,
+    filename: 'Residents_Report.pdf',
+    html2canvas: { scale: 2 },
+    jsPDF: { unit: 'in', format: 'letter', orientation: 'portrait' }
+  }).save();
+}
+</script>
 </body>
 </html>
