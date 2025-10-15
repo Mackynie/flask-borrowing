@@ -1836,7 +1836,6 @@ def admin_account():
 
         password = request.form.get('password')
         if password:
-            # Password validation
             pattern = r'^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$'
             if not re.match(pattern, password):
                 flash("Password must be at least 8 characters long and include uppercase, lowercase, number, and special character.", "danger")
@@ -1846,7 +1845,7 @@ def admin_account():
 
         db.session.commit()
 
-        # Log the update action
+        # Log activity
         new_activity = AdminActivity(
             admin_id=admin.id,
             action=f"Updated personal details (Name, Username, Position{', Password' if password else ''})"
