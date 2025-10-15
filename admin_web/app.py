@@ -273,11 +273,21 @@ def restrict_overdue_accounts():
                 resident.is_restricted = True
                 restricted_names.add(resident.full_name)
 
+                # ✅ Log automatic restriction in History
+                new_history = History(
+                    type='Account Restriction',
+                    resident_name=resident.full_name,
+                    action_type='Automatically Restricted',
+                    reason=f'Overdue borrowed item: {borrow.item} (Return date: {borrow.return_date})'
+                )
+                db.session.add(new_history)
+
         if restricted_names:
             db.session.commit()
             print(f"[AUTO RESTRICT] Restricted residents: {restricted_names}")
         else:
             print("[AUTO RESTRICT] No accounts to restrict today.")
+
 
 
 @app.route('/')
@@ -641,14 +651,17 @@ def history_page():
     if not session.get('admin'):
         return redirect(url_for('login'))
 
-    history_logs = History.query.order_by(History.action_date.desc()).all()
+    # Separate query for restriction logs
+    restriction_logs = History.query.filter_by(type='Account Restriction').order_by(History.action_date.desc()).all()
+    # Other history logs (reservations and borrowings)
+    other_logs = History.query.filter(History.type != 'Account Restriction').order_by(History.action_date.desc()).all()
 
-    # fetch the admin from the same session id
     admin = Admin.query.get(session['admin_id'])
     return render_template(
         'history.html',
-        history_logs=history_logs,
-        username=admin.full_name  # pass the same full name
+        restriction_logs=restriction_logs,
+        other_logs=other_logs,
+        username=admin.full_name
     )
 
 
@@ -1025,8 +1038,23 @@ def restrict_resident(id):
 
     resident = Resident.query.get_or_404(id)
     resident.is_restricted = not resident.is_restricted  # Toggle
+
+    # ✅ Determine action type
+    action = 'Restricted' if resident.is_restricted else 'Unrestricted'
+
+    # ✅ Add to history log
+    new_history = History(
+        type='Account Restriction',
+        resident_name=resident.full_name,
+        action_type=f'Manually {action}',
+        reason=f'Account was {action.lower()} by admin.'
+    )
+
+    db.session.add(new_history)
     db.session.commit()
+
     return redirect(url_for('manage_accounts'))
+
 
 @app.route('/api/return-request', methods=['POST'])
 def return_request():
