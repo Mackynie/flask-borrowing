@@ -18,8 +18,29 @@
 <body>
 <div class="container-fluid">
   <div class="row">
-    <!-- Sidebar (reuse existing sidebar from BARMA) -->
-    {% include 'sidebar.html' %}
+    <nav class="col-md-2 d-md-block sidebar">
+      <ul class="nav flex-column">
+        <li class="nav-item text-center mt-3">
+          <a href="{{ url_for('dashboard') }}" class="text-decoration-none text-light">
+            <img src="{{ url_for('static', filename='img/logo3.png') }}" alt="BARMA Logo" style="max-width: 120px; margin-bottom: 1px;">
+            <h1 class="mt-2">BARMA</h1>
+          </a>
+        </li>
+        <li class="nav-item"><a class="nav-link" href="{{ url_for('dashboard') }}"><i class="bi bi-speedometer2 me-2"></i>Dashboard</a></li>
+        <li class="nav-item"><a class="nav-link" href="{{ url_for('assets_page') }}"><i class="bi bi-box-seam me-2"></i>Assets</a></li>
+        <li class="nav-item"><a class="nav-link" href="{{ url_for('reservations_page') }}"><i class="bi bi-calendar-check me-2"></i>Reservations</a></li>
+        <li class="nav-item"><a class="nav-link" href="{{ url_for('borrowings_page') }}"><i class="bi bi-arrow-left-right me-2"></i>Borrowing</a></li>
+        <li class="nav-item"><a class="nav-link" href="{{ url_for('manage_accounts') }}"><i class="bi bi-people-fill me-2"></i>Accounts</a></li>
+        <li class="nav-item"><a class="nav-link" href="{{ url_for('history_page') }}"><i class="bi bi-clock-history me-2"></i>History</a></li>
+        <li class="nav-item"><a class="nav-link active" href="{{ url_for('admin_account') }}"><i class="bi bi-person-circle me-2"></i>My Account</a></li>
+        <li class="nav-item logout-btn mt-3 text-center">
+          <a href="{{ url_for('logout') }}" class="btn btn-outline-light w-75">
+            <i class="bi bi-box-arrow-right me-2"></i>Logout
+          </a>
+        </li>
+      </ul>
+    </nav>
+
 
     <!-- Main Content -->
     <main class="col-md-10 ms-sm-auto px-4 mt-4">
