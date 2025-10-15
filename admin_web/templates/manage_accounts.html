@@ -189,7 +189,30 @@
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
 <script src="https://unpkg.com/aos@2.3.1/dist/aos.js"></script>
 <script>
-AOS.init();
+const adminName = "{{ admin_name }}";
+
+// ✅ Shared header/footer for Residents
+function buildResidentsHeader() {
+  return `
+    <div style="text-align:center; margin-bottom:10px;">
+      <img src="{{ url_for('static', filename='img/logo3.png') }}" style="height:60px; float:right;">
+      <img src="{{ url_for('static', filename='img/POB5.jpg') }}" style="height:50px; float:left;">
+      <div style="font-weight:bold; font-size:16px;">POBLACION 5</div>
+      <div style="font-size:12px;">Poblacion 5, Midsayap, Cotabato</div>
+      <div style="font-size:11px; margin-bottom:5px;">BARMA RESIDENTS REPORT</div>
+      <hr style="border:1px solid #000; margin:5px 0;">
+    </div>
+  `;
+}
+
+function buildResidentsFooter() {
+  return `
+    <div style="font-size:12px; margin-top:8px; display:flex; justify-content:space-between;">
+      <span>Print date: ${new Date().toLocaleDateString()}</span>
+      <span>Printed by: ${adminName}</span>
+    </div>
+  `;
+}
 
 // ✅ Live Search Filter
 document.getElementById('searchInput').addEventListener('input', function() {
@@ -203,32 +226,60 @@ document.getElementById('searchInput').addEventListener('input', function() {
   });
 });
 
-// ✅ Export visible rows to PDF
+// ✅ Print Residents Report
+function printResidentsReport() {
+  const headerHTML = buildResidentsHeader();
+  const footerHTML = buildResidentsFooter();
+  const tableClone = document.getElementById('residentTable').cloneNode(true);
+
+  // Remove actions column
+  tableClone.querySelectorAll('thead th:last-child, tbody td:last-child').forEach(el => el.remove());
+
+  const style = `
+    <style>
+      body { font-family: Arial, sans-serif; padding: 20px; color: #000; }
+      table { border-collapse: collapse; width: 100%; }
+      th, td { border: 0.5px solid black; padding: 4px; font-size: 12px; text-align: center; }
+      th { font-weight: bold; }
+    </style>
+  `;
+  const win = window.open('', '', 'width=900,height=650');
+  win.document.write(`<html><head><title>Residents Report</title>${style}</head><body>${headerHTML}${tableClone.outerHTML}${footerHTML}</body></html>`);
+  win.document.close();
+  win.onload = () => { win.focus(); win.print(); };
+}
+
+// ✅ Export Residents to PDF
 function exportResidentsToPDF() {
   const rows = document.querySelectorAll('#residentTable tbody tr.export-visible, #residentTable tbody tr:not([style*="display: none"])');
   if (!rows.length) return alert('No visible residents to export.');
 
+  const header = buildResidentsHeader();
+  const footer = buildResidentsFooter();
   const tableClone = document.getElementById('residentTable').cloneNode(true);
-  tableClone.querySelectorAll('thead th:last-child').forEach(th => th.remove());
-  tableClone.querySelectorAll('tbody tr').forEach(tr => {
-    const lastTd = tr.querySelector('td:last-child');
-    if (lastTd) lastTd.remove();
-    if (tr.style.display === 'none') tr.remove();
+
+  // Remove actions column
+  tableClone.querySelectorAll('thead th:last-child, tbody td:last-child').forEach(el => el.remove());
+  tableClone.style.borderCollapse = 'collapse';
+  tableClone.querySelectorAll('th, td').forEach(c => {
+    c.style.border = '0.5px solid black';
+    c.style.color = 'black';
+    c.style.padding = '4px';
+    c.style.textAlign = 'center';
+    c.style.fontSize = '12px';
   });
 
   const container = document.createElement('div');
-  container.innerHTML = `
-    <div style="text-align:center;">
-      <h3>Barangay Poblacion 5 - Residents Report</h3>
-      <p>Generated on ${new Date().toLocaleDateString()}</p>
-      <hr>
-    </div>
-  `;
+  container.innerHTML = header;
   container.appendChild(tableClone);
+  const footerDiv = document.createElement('div');
+  footerDiv.innerHTML = footer;
+  container.appendChild(footerDiv);
 
   html2pdf().from(container).set({
     margin: 0.5,
-    filename: 'Residents_Report.pdf',
+    filename: 'BARMA-Residents-Report.pdf',
+    image: { type: 'jpeg', quality: 1 },
     html2canvas: { scale: 2 },
     jsPDF: { unit: 'in', format: 'letter', orientation: 'portrait' }
   }).save();
