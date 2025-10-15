@@ -193,7 +193,7 @@ class Resident(db.Model):
 
 
 class AdminActivity(db.Model):
-    __tablename__ = "admin_activities"
+    __tablename__ = "AdminActivity"
 
     id = db.Column(db.Integer, primary_key=True)
     admin_id = db.Column(db.Integer, db.ForeignKey('admins.id'), nullable=False)  # <-- add this
