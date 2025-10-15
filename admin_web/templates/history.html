@@ -126,11 +126,12 @@
                 </tr>
               </thead>
               <tbody>
-                {% for h in history_logs %}
+                <!-- Restriction logs -->
+                {% for h in restriction_logs %}
                 <tr class="export-visible">
                   <td>{{ h.type }}</td>
-                  <td>{{ h.resident_name }}</td>
-                  <td>{{ h.item }}</td>
+                  <td>{{ h.resident_name or 'N/A' }}</td>
+                  <td>{{ h.item or 'N/A' }}</td>
                   <td>{{ h.quantity or 'N/A' }}</td>
                   <td>{{ h.purpose or 'N/A' }}</td>
                   <td>{{ h.borrow_date.strftime('%Y-%m-%d') if h.borrow_date else 'N/A' }}</td>
@@ -148,10 +149,38 @@
                   </td>
                   <td>{{ h.reason or 'N/A' }}</td>
                 </tr>
-                {% else %}
-                <tr><td colspan="9" class="text-center text-muted">No history records available.</td></tr>
                 {% endfor %}
+              
+                <!-- Other logs (Borrowings & Reservations) -->
+                {% for h in other_logs %}
+                <tr class="export-visible">
+                  <td>{{ h.type }}</td>
+                  <td>{{ h.resident_name or 'N/A' }}</td>
+                  <td>{{ h.item or 'N/A' }}</td>
+                  <td>{{ h.quantity or 'N/A' }}</td>
+                  <td>{{ h.purpose or 'N/A' }}</td>
+                  <td>{{ h.borrow_date.strftime('%Y-%m-%d') if h.borrow_date else 'N/A' }}</td>
+                  <td>{{ h.return_date.strftime('%Y-%m-%d') if h.return_date else 'N/A' }}</td>
+                  <td>
+                    {% if h.action_type == 'Approved' %}
+                      <span class="badge badge-approved">Approved</span>
+                    {% elif h.action_type == 'Rejected' %}
+                      <span class="badge badge-rejected">Rejected</span>
+                    {% elif h.action_type == 'Returned' %}
+                      <span class="badge badge-returned">Returned</span>
+                    {% else %}
+                      <span class="badge bg-secondary">Unknown</span>
+                    {% endif %}
+                  </td>
+                  <td>{{ h.reason or 'N/A' }}</td>
+                </tr>
+                {% endfor %}
+              
+                {% if restriction_logs|length + other_logs|length == 0 %}
+                <tr><td colspan="9" class="text-center text-muted">No history records available.</td></tr>
+                {% endif %}
               </tbody>
+
             </table>
           </div>
         </div>
