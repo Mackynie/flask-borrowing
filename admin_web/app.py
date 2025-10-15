@@ -163,7 +163,7 @@ def allowed_file(filename):
 class Admin(db.Model):
     __tablename__ = "admins"
 
-    id = db.Column(db.Integer, primary_key=True)
+    id = db.Column(db.Integer, primary_key=True, autoincrement=True)
     full_name = db.Column(db.String(150), nullable=False)
     position = db.Column(db.String(100), nullable=False)
     username = db.Column(db.String(80), unique=True, nullable=False)
@@ -174,6 +174,7 @@ class Admin(db.Model):
 
     def check_password(self, password):
         return check_password_hash(self.password_hash, password)
+
 
 class Resident(db.Model):
     __tablename__ = 'residents'
