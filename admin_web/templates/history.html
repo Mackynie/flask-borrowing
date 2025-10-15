@@ -195,62 +195,63 @@
       
 
     
-      <!-- Account Restrictions Tab -->
-      <div class="tab-pane fade" id="restrictions" role="tabpanel">
-        <div class="card shadow-sm mb-4" data-aos="fade-up">
-          <div class="card-body">
-            <div class="table-responsive w-100">
-              <table class="table table-bordered table-hover align-middle mb-0">
-                <thead class="table-light">
-                  <tr>
-                    <th>Resident</th>
-                    <th>Type</th>
-                    <th>Reason</th>
-                    <th>Action</th>
-                    <th>Date</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {% for r in restriction_logs %}
-                  <tr>
-                    <td>{{ r.resident_name }}</td>
-                    <td>{{ r.type }}</td>
-                    <td>{{ r.reason }}</td>
-                    <td>{{ r.action_type }}</td>
-                    <td>{{ r.action_date.strftime('%Y-%m-%d') if r.action_date else 'N/A' }}</td>
-                  </tr>
-                  {% endfor %}
-                </tbody>
-              </table>
+             <!-- Account Restrictions Tab -->
+        <div class="tab-pane fade" id="restrictions" role="tabpanel">
+          <div class="card shadow-sm mb-4" data-aos="fade-up">
+            <div class="card-body">
+              <div class="table-responsive w-100">
+                <table class="table table-bordered table-hover align-middle mb-0">
+                  <thead class="table-light">
+                    <tr>
+                      <th>Resident</th>
+                      <th>Type</th>
+                      <th>Reason</th>
+                      <th>Action</th>
+                      <th>Date</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {% for r in restriction_logs %}
+                    <tr>
+                      <td>{{ r.resident_name }}</td>
+                      <td>{{ r.type }}</td>
+                      <td>{{ r.reason }}</td>
+                      <td>{{ r.action_type }}</td>
+                      <td>{{ r.action_date.strftime('%Y-%m-%d') if r.action_date else 'N/A' }}</td>
+                    </tr>
+                    {% endfor %}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        
+          <!-- Summary Table -->
+          <h5 class="mt-4">Restriction Summary</h5>
+          <div class="card shadow-sm mb-4" data-aos="fade-up">
+            <div class="card-body">
+              <div class="table-responsive w-100">
+                <table class="table table-bordered align-middle mb-0">
+                  <thead>
+                    <tr>
+                      <th>Resident</th>
+                      <th>Total Restrictions</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {% for resident, count in restriction_summary.items() %}
+                    <tr>
+                      <td>{{ resident }}</td>
+                      <td>{{ count }}</td>
+                    </tr>
+                    {% endfor %}
+                  </tbody>
+                </table>
+              </div>
             </div>
           </div>
         </div>
-      
-        <!-- Summary -->
-        <h5 class="mt-4">Restriction Summary</h5>
-        <div class="card shadow-sm mb-4" data-aos="fade-up">
-          <div class="card-body">
-            <div class="table-responsive w-100">
-              <table class="table table-bordered align-middle mb-0">
-                <thead>
-                  <tr>
-                    <th>Resident</th>
-                    <th>Total Restrictions</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {% for resident, count in restriction_summary.items() %}
-                  <tr>
-                    <td>{{ resident }}</td>
-                    <td>{{ count }}</td>
-                  </tr>
-                  {% endfor %}
-                </tbody>
-              </table>
-            </div>
-          </div>
-        </div>
-      </div>
+
 
         </div>
       </div>
