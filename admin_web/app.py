@@ -659,10 +659,11 @@ def return_borrowing(borrowing_id):
 @admin_required
 def assets_page():
     admin = Admin.query.get(session['admin_id'])
-    assets = Asset.query.filter_by(classification='Borrowing').all()  # only borrowing type
-    borrowings = Borrowing.query.all()
+    assets = Asset.query.all()  # ✅ show all classifications
+    borrowings = Borrowing.query.all()  # needed for calculations
 
     return render_template('assets.html', assets=assets, borrowings=borrowings, admin_name=admin.full_name)
+
 
 
 @app.route('/help')
