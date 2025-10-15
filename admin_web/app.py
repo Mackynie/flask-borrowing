@@ -1819,8 +1819,16 @@ def edit_resident(id):
 
 @app.route('/admin_account', methods=['GET', 'POST'])
 def admin_account():
-    admin = Admin.query.filter_by(id=session['admin_id']).first()
-    
+    admin_id = session.get('admin_id')
+    if not admin_id:
+        flash("Admin not logged in.", "danger")
+        return redirect(url_for('login'))
+
+    admin = Admin.query.get(admin_id)
+    if not admin:
+        flash("Admin account not found.", "danger")
+        return redirect(url_for('login'))
+
     if request.method == 'POST':
         admin.full_name = request.form['full_name']
         admin.username = request.form['username']
@@ -1835,7 +1843,7 @@ def admin_account():
                 return redirect(url_for('admin_account'))
 
             admin.password_hash = generate_password_hash(password)
-        
+
         db.session.commit()
 
         # Log the update action
