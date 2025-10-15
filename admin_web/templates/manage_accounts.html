@@ -100,9 +100,14 @@
             <div class="w-50">
               <input type="text" id="searchInput" class="form-control" placeholder="Search resident name...">
             </div>
-            <button class="btn btn-danger btn-sm" onclick="exportResidentsToPDF()">
-              <i class="bi bi-filetype-pdf me-1"></i> Generate Residents Report
-            </button>
+            <div>
+              <button class="btn btn-secondary btn-sm me-1" onclick="printResidentsReport()">
+                <i class="bi bi-printer me-1"></i> Print
+              </button>
+              <button class="btn btn-danger btn-sm" onclick="exportResidentsToPDF()">
+                <i class="bi bi-filetype-pdf me-1"></i> Generate Residents Report
+              </button>
+            </div>
           </div>
           <div class="table-responsive">
             <table class="table table-hover table-bordered align-middle" id="residentTable">
