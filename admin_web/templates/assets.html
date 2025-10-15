@@ -77,6 +77,14 @@
           <button class="btn btn-sm text-dark" style="background-color: #FFC100;" onclick="printReport()">
             <i class="bi bi-printer me-1"></i> Print
           </button>
+
+          <!-- ✅ Column Filter Dropdown -->
+          <select id="columnFilter" class="form-select form-select-sm ms-2" style="width:auto;">
+            <option value="all">All Columns</option>
+            <option value="hideBorrowedAvailable">Hide Active Borrowed & Available</option>
+            <option value="hideTotalAvailable">Hide Total Quantity & Available</option>
+            <option value="hideTotalBorrowed">Hide Total Quantity & Borrowed</option>
+          </select>
         </div>
       </div>
 
@@ -133,7 +141,7 @@
   </div>
 </div>
 
-<!-- Edit Modal -->
+<!-- Edit Modals -->
 {% for asset in assets %}
 <div class="modal fade" id="editAssetModal{{ asset.id }}" tabindex="-1">
   <div class="modal-dialog modal-lg">
@@ -170,13 +178,13 @@
 {% endfor %}
 
 <!-- Add Asset Modal -->
-<div class="modal fade" id="addAssetModal" tabindex="-1" aria-labelledby="addAssetModalLabel" aria-hidden="true">
+<div class="modal fade" id="addAssetModal" tabindex="-1">
   <div class="modal-dialog modal-lg">
     <div class="modal-content">
       <form method="POST" action="{{ url_for('add_asset') }}">
         <div class="modal-header">
-          <h5 class="modal-title" id="addAssetModalLabel">Add New Asset</h5>
-          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+          <h5 class="modal-title">Add New Asset</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
         </div>
         <div class="modal-body">
           <div class="mb-3">
@@ -230,7 +238,35 @@ setTimeout(() => {
   document.querySelectorAll('.alert').forEach(alert => new bootstrap.Alert(alert).close());
 }, 4000);
 
-// ✅ Shared header/footer for both Print & PDF
+// ✅ Column filter logic
+function applyColumnFilter(tableClone) {
+  const filter = document.getElementById('columnFilter').value;
+  const headers = Array.from(tableClone.querySelectorAll('thead th')).map(th => th.innerText.trim());
+  const indexTotal = headers.indexOf('Total Quantity');
+  const indexAvailable = headers.indexOf('Available Assets');
+  const indexBorrowed = headers.indexOf('Active Borrowed');
+
+  const removeColumn = (index) => {
+    if (index === -1) return;
+    tableClone.querySelectorAll('tr').forEach(tr => {
+      const cells = tr.querySelectorAll('th, td');
+      if (cells[index]) cells[index].remove();
+    });
+  };
+
+  if (filter === 'hideBorrowedAvailable') {
+    removeColumn(indexBorrowed);
+    removeColumn(indexAvailable);
+  } else if (filter === 'hideTotalAvailable') {
+    removeColumn(indexTotal);
+    removeColumn(indexAvailable);
+  } else if (filter === 'hideTotalBorrowed') {
+    removeColumn(indexTotal);
+    removeColumn(indexBorrowed);
+  }
+}
+
+// ✅ Shared header/footer
 function buildExportHeader() {
   return `
     <div style="text-align:center; margin-bottom:10px;">
@@ -243,9 +279,6 @@ function buildExportHeader() {
     </div>
   `;
 }
-function buildReportTitle() {
-  return `<div style="text-align:center; font-weight:bold; margin-bottom:8px;">ASSETS LIST</div>`;
-}
 function buildExportFooter() {
   return `
     <div style="font-size:12px; margin-top:8px; display:flex; justify-content:space-between;">
@@ -255,44 +288,30 @@ function buildExportFooter() {
   `;
 }
 
-// ✅ Print Report Function
+// ✅ Print Report
 async function printReport() {
   const headerHTML = buildExportHeader();
   const footerHTML = buildExportFooter();
   const tableClone = document.getElementById('assetsTable').cloneNode(true);
 
-  // Remove the "Actions" column
-  tableClone.querySelectorAll('thead th:last-child').forEach(th => th.remove());
-  tableClone.querySelectorAll('tbody tr').forEach(tr => {
-    const lastTd = tr.querySelector('td:last-child');
-    if(lastTd) lastTd.remove();
-  });
+  tableClone.querySelectorAll('thead th:last-child, tbody td:last-child').forEach(el => el.remove());
+  applyColumnFilter(tableClone);
 
-  // Apply simple print styling
   const style = `
     <style>
       body { font-family: Arial, sans-serif; padding: 20px; color: #000; }
-      table { border-collapse: collapse; width: 100%; table-layout: fixed; }
-      th, td { border: 0.5px solid black; padding: 4px; font-size: 12px; text-align: center; word-wrap: break-word; }
+      table { border-collapse: collapse; width: 100%; }
+      th, td { border: 0.5px solid black; padding: 4px; font-size: 12px; text-align: center; }
       th { font-weight: bold; }
     </style>
   `;
-
-  const printWindow = window.open('', '', 'width=900,height=650');
-  printWindow.document.write(`
-    <html>
-      <head><title>Assets Report</title>${style}</head>
-      <body>${headerHTML}${tableClone.outerHTML}${footerHTML}</body>
-    </html>
-  `);
-  printWindow.document.close();
-  printWindow.onload = () => {
-    printWindow.focus();
-    printWindow.print();
-  };
+  const win = window.open('', '', 'width=900,height=650');
+  win.document.write(`<html><head><title>Assets Report</title>${style}</head><body>${headerHTML}${tableClone.outerHTML}${footerHTML}</body></html>`);
+  win.document.close();
+  win.onload = () => { win.focus(); win.print(); };
 }
 
-// ✅ PDF Export Function
+// ✅ PDF Export
 async function exportFilteredToPDF() {
   const rows = document.querySelectorAll('#assetsTable tbody tr.export-visible');
   if (!rows.length) return alert('No visible records to export.');
@@ -301,34 +320,27 @@ async function exportFilteredToPDF() {
   const footer = buildExportFooter();
   const tableClone = document.getElementById('assetsTable').cloneNode(true);
 
-  // Remove "Actions" column and hide non-visible rows
-  tableClone.querySelectorAll('thead th:last-child').forEach(th => th.remove());
-  tableClone.querySelectorAll('tbody tr').forEach(tr => {
-    if (!tr.classList.contains('export-visible')) tr.remove();
-    else tr.querySelector('td:last-child')?.remove();
-  });
+  tableClone.querySelectorAll('thead th:last-child, tbody td:last-child').forEach(el => el.remove());
+  applyColumnFilter(tableClone);
 
-  // Style the cloned table
   tableClone.style.borderCollapse = 'collapse';
-  tableClone.querySelectorAll('th, td').forEach(cell => {
-    cell.style.border = '0.5px solid black';
-    cell.style.color = 'black';
-    cell.style.padding = '4px';
-    cell.style.textAlign = 'center';
-    cell.style.fontSize = '12px';
+  tableClone.querySelectorAll('th, td').forEach(c => {
+    c.style.border = '0.5px solid black';
+    c.style.color = 'black';
+    c.style.padding = '4px';
+    c.style.textAlign = 'center';
+    c.style.fontSize = '12px';
   });
-  tableClone.querySelectorAll('th').forEach(cell => cell.style.fontWeight = 'bold');
 
   const container = document.createElement('div');
-  container.innerHTML = header + buildReportTitle();
+  container.innerHTML = header;
   container.appendChild(tableClone);
   const footerDiv = document.createElement('div');
   footerDiv.innerHTML = footer;
   container.appendChild(footerDiv);
 
-  // Export to PDF
   html2pdf().from(container).set({
-    margin: [0.5, 0.5, 0.5, 0.5],
+    margin: 0.5,
     filename: 'BARMA-Assets-Report.pdf',
     image: { type: 'jpeg', quality: 1 },
     html2canvas: { scale: 2 },
@@ -338,4 +350,3 @@ async function exportFilteredToPDF() {
 </script>
 </body>
 </html>
-
