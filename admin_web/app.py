@@ -374,11 +374,21 @@ def login():
             session['admin_id'] = user.id   # <-- add this
             session['admin'] = True          # optional, keep for other checks
             restrict_overdue_accounts()      # your existing function
+
+            # Log login activity
+            new_activity = AdminActivity(
+                admin_id=user.id,
+                action="Logged in"
+            )
+            db.session.add(new_activity)
+            db.session.commit()
+
             return redirect(url_for('dashboard'))
         else:
             return render_template('login.html', error='Invalid credentials')
 
     return render_template('login.html')
+
 
 
 
@@ -427,6 +437,14 @@ def add_asset():
     db.session.add(asset)
     db.session.commit()
 
+    # Log activity
+    new_activity = AdminActivity(
+        admin_id=session.get('admin_id'),
+        action=f"Added new asset: {name} (Quantity: {quantity}, Classification: {classification})"
+    )
+    db.session.add(new_activity)
+    db.session.commit()
+
     flash("Asset added successfully!", "success")
     return redirect(url_for('assets_page'))
 
@@ -438,9 +456,21 @@ def edit_asset(id):
 
     asset = Asset.query.get_or_404(id)
     if request.method == 'POST':
+        old_name = asset.name
+        old_quantity = asset.quantity
+
         asset.name = request.form['name']
         asset.quantity = int(request.form['quantity'])
         db.session.commit()
+
+        # Log activity
+        new_activity = AdminActivity(
+            admin_id=session.get('admin_id'),
+            action=f"Edited asset: {old_name} (Quantity: {old_quantity}) → {asset.name} (Quantity: {asset.quantity})"
+        )
+        db.session.add(new_activity)
+        db.session.commit()
+
         return redirect(url_for('assets_page'))
 
     return render_template('edit_asset.html', asset=asset)
@@ -451,8 +481,19 @@ def delete_asset(id):
         return redirect(url_for('login'))
 
     asset = Asset.query.get_or_404(id)
+    asset_name = asset.name
+    asset_quantity = asset.quantity
     db.session.delete(asset)
     db.session.commit()
+
+    # Log activity
+    new_activity = AdminActivity(
+        admin_id=session.get('admin_id'),
+        action=f"Deleted asset: {asset_name} (Quantity: {asset_quantity})"
+    )
+    db.session.add(new_activity)
+    db.session.commit()
+
     return redirect(url_for('assets_page'))
 
 @app.route('/add_reservation', methods=['POST'])
@@ -471,7 +512,17 @@ def add_reservation():
     )
     db.session.add(reservation)
     db.session.commit()
+
+    # Log activity
+    new_activity = AdminActivity(
+        admin_id=session.get('admin_id'),
+        action=f"Added reservation: {item} for {name} on {request_date.strftime('%Y-%m-%d')}"
+    )
+    db.session.add(new_activity)
+    db.session.commit()
+
     return redirect(url_for('dashboard'))
+
 
 @app.route('/logout')
 def logout():
@@ -498,6 +549,16 @@ def approve_reservation(id):
     )
 
     db.session.add(history)
+    db.session.commit()
+
+    # Log activity
+    new_activity = AdminActivity(
+        admin_id=session.get('admin_id'),
+        action=f"Approved reservation: {reservation.item} for {reservation.resident_name} "
+               f"from {reservation.reservation_start.strftime('%Y-%m-%d')} "
+               f"to {reservation.reservation_end.strftime('%Y-%m-%d')}"
+    )
+    db.session.add(new_activity)
     db.session.commit()
 
     # ✅ Send SMS
@@ -539,6 +600,16 @@ def reject_reservation(id):
     db.session.add(history)
     db.session.commit()
 
+    # Log activity
+    new_activity = AdminActivity(
+        admin_id=session.get('admin_id'),
+        action=f"Rejected reservation: {reservation.item} for {reservation.resident_name} "
+               f"from {reservation.reservation_start.strftime('%Y-%m-%d')} "
+               f"to {reservation.reservation_end.strftime('%Y-%m-%d')}. Reason: {reason}"
+    )
+    db.session.add(new_activity)
+    db.session.commit()
+
     resident = Resident.query.filter_by(full_name=reservation.resident_name).first()
     if resident:
         send_sms(
@@ -547,7 +618,6 @@ def reject_reservation(id):
         )
 
     return redirect(url_for('dashboard'))
-
 
 
 @app.route('/approve_borrowing/<int:id>', methods=['GET', 'POST'])
@@ -599,7 +669,7 @@ def approve_borrowing(id):
     db.session.add(history)
     db.session.commit()
 
-    # 🔹 Log Admin Activity
+      # 🔹 Log Admin Activity
     admin_id = session.get('admin_id')
     if admin_id:
         activity = AdminActivity(
@@ -608,6 +678,7 @@ def approve_borrowing(id):
         )
         db.session.add(activity)
         db.session.commit()
+
 
     # Send SMS
     resident = Resident.query.filter_by(full_name=borrowing.resident_name).first()
@@ -657,6 +728,7 @@ def reject_borrowing(id):
         )
         db.session.add(activity)
         db.session.commit()
+
 
     # Send SMS
     resident = Resident.query.filter_by(full_name=borrowing.resident_name).first()
