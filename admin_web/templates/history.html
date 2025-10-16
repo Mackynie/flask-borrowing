@@ -206,6 +206,33 @@
                 </div>
               </div>
 
+               <!-- Summary Table -->
+                <h5 class="mt-4">Restriction Summary</h5>
+                <div class="card shadow-sm mb-4" data-aos="fade-up">
+                  <div class="card-body">
+                    <div class="table-responsive w-100">
+                      <table class="table table-bordered align-middle mb-0">
+                        <thead>
+                          <tr>
+                            <th>Resident</th>
+                            <th>Total Restrictions</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {% for resident, count in restriction_summary.items() %}
+                          <tr>
+                            <td>{{ resident }}</td>
+                            <td>{{ count }}</td>
+                          </tr>
+                          {% endfor %}
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              
               <!-- Table -->
               <div class="table-responsive w-100">
                 <table id="restrictionsTable" class="table table-bordered table-hover align-middle mb-0">
@@ -237,32 +264,7 @@
             </div>
           </div>
 
-          <!-- Summary Table -->
-          <h5 class="mt-4">Restriction Summary</h5>
-          <div class="card shadow-sm mb-4" data-aos="fade-up">
-            <div class="card-body">
-              <div class="table-responsive w-100">
-                <table class="table table-bordered align-middle mb-0">
-                  <thead>
-                    <tr>
-                      <th>Resident</th>
-                      <th>Total Restrictions</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {% for resident, count in restriction_summary.items() %}
-                    <tr>
-                      <td>{{ resident }}</td>
-                      <td>{{ count }}</td>
-                    </tr>
-                    {% endfor %}
-                  </tbody>
-                </table>
-              </div>
-            </div>
-          </div>
-        </div>
-
+         
       </div>
     </main>
   </div>
