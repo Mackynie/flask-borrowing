@@ -420,26 +420,32 @@ def dashboard():
 @app.route('/add_asset', methods=['POST'])
 def add_asset():
     if not session.get('admin'):
+        flash("Admin not logged in.", "danger")
+        return redirect(url_for('login'))
+
+    admin_id = session.get('admin_id')
+    if not admin_id:
+        flash("Admin session expired. Please log in again.", "danger")
         return redirect(url_for('login'))
 
     name = request.form['name'].strip()
     quantity = int(request.form['quantity'])
     classification = request.form['classification']
 
-    # 🔍 Check if an asset with the same name already exists
+    # Check if asset already exists
     existing_asset = Asset.query.filter_by(name=name).first()
     if existing_asset:
         flash("Asset with this name already exists!", "danger")
         return redirect(url_for('assets_page'))
 
-    # ✅ If no duplicate, proceed to add
+    # Add asset
     asset = Asset(name=name, quantity=quantity, classification=classification)
     db.session.add(asset)
     db.session.commit()
 
     # Log activity
     new_activity = AdminActivity(
-        admin_id=session.get('admin_id'),
+        admin_id=admin_id,
         action=f"Added new asset: {name} (Quantity: {quantity}, Classification: {classification})"
     )
     db.session.add(new_activity)
@@ -452,49 +458,70 @@ def add_asset():
 @app.route('/edit_asset/<int:id>', methods=['GET', 'POST'])
 def edit_asset(id):
     if not session.get('admin'):
+        flash("Admin not logged in.", "danger")
+        return redirect(url_for('login'))
+
+    admin_id = session.get('admin_id')
+    if not admin_id:
+        flash("Admin session expired. Please log in again.", "danger")
         return redirect(url_for('login'))
 
     asset = Asset.query.get_or_404(id)
     if request.method == 'POST':
         old_name = asset.name
         old_quantity = asset.quantity
+        old_classification = asset.classification
 
-        asset.name = request.form['name']
+        asset.name = request.form['name'].strip()
         asset.quantity = int(request.form['quantity'])
+        asset.classification = request.form['classification']
         db.session.commit()
 
         # Log activity
         new_activity = AdminActivity(
-            admin_id=session.get('admin_id'),
-            action=f"Edited asset: {old_name} (Quantity: {old_quantity}) → {asset.name} (Quantity: {asset.quantity})"
+            admin_id=admin_id,
+            action=f"Edited asset: {old_name} (Qty: {old_quantity}, Class: {old_classification}) → "
+                   f"{asset.name} (Qty: {asset.quantity}, Class: {asset.classification})"
         )
         db.session.add(new_activity)
         db.session.commit()
 
+        flash("Asset updated successfully!", "success")
         return redirect(url_for('assets_page'))
 
     return render_template('edit_asset.html', asset=asset)
 
+
 @app.route('/delete_asset/<int:id>')
 def delete_asset(id):
     if not session.get('admin'):
+        flash("Admin not logged in.", "danger")
+        return redirect(url_for('login'))
+
+    admin_id = session.get('admin_id')
+    if not admin_id:
+        flash("Admin session expired. Please log in again.", "danger")
         return redirect(url_for('login'))
 
     asset = Asset.query.get_or_404(id)
     asset_name = asset.name
     asset_quantity = asset.quantity
+    asset_classification = asset.classification
+
     db.session.delete(asset)
     db.session.commit()
 
     # Log activity
     new_activity = AdminActivity(
-        admin_id=session.get('admin_id'),
-        action=f"Deleted asset: {asset_name} (Quantity: {asset_quantity})"
+        admin_id=admin_id,
+        action=f"Deleted asset: {asset_name} (Qty: {asset_quantity}, Class: {asset_classification})"
     )
     db.session.add(new_activity)
     db.session.commit()
 
+    flash("Asset deleted successfully!", "success")
     return redirect(url_for('assets_page'))
+
 
 @app.route('/add_reservation', methods=['POST'])
 def add_reservation():
