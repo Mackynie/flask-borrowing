@@ -1272,7 +1272,7 @@ def confirm_return(borrow_id):
         return jsonify({'error': str(e)}), 500
 
     
-@@app.route('/api/borrowings/<string:resident_name>', methods=['GET'])
+@app.route('/api/borrowings/<string:resident_name>', methods=['GET'])
 def get_borrowings_by_resident(resident_name):
     borrowings = Borrowing.query.filter_by(resident_name=resident_name).filter(
         Borrowing.status.in_(['Approved', 'Return Requested'])
