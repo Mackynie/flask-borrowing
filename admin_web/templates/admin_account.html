@@ -195,13 +195,14 @@
                   <th>Date & Time</th>
                 </tr>
               </thead>
-              <tbody id="activityTbody">
-                {% for activity in activities|reverse %}
+             <tbody id="activityTbody">
+                {% for activity in activities %}
                   <tr class="export-visible">
                     <td>{{ activity.action or 'N/A' }}</td>
                     <td>{{ activity.timestamp.strftime('%Y-%m-%d %H:%M:%S') }}</td>
                   </tr>
                 {% endfor %}
+
                 <tr id="noActivityRow" style="display:none;">
                   <td colspan="2" class="text-center text-muted">No records found.</td>
                 </tr>
