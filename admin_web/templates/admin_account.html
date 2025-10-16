@@ -181,6 +181,25 @@
         </div>
       </div>
 
+      <!-- Activity Log Card -->
+      <div class="card p-4 mb-4">
+        <h4 class="mb-3 text-center">Activity Log</h4>
+        {% if activities %}
+          <ul class="list-group list-group-flush">
+            {% for activity in activities %}
+              <li class="list-group-item d-flex justify-content-between align-items-start">
+                <div>
+                  {{ activity.action }}
+                </div>
+                <small class="text-muted">{{ activity.timestamp.strftime('%Y-%m-%d %H:%M:%S') }}</small>
+              </li>
+            {% endfor %}
+          </ul>
+        {% else %}
+          <p class="text-center text-muted mb-0">No activity yet.</p>
+        {% endif %}
+      </div>
+
     </main>
   </div>
 </div>
