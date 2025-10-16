@@ -1034,11 +1034,13 @@ def get_all_borrowings():
     result = []
     for b in borrowings:
         result.append({
+            'id': b.id,
             'item': b.item,
             'quantity': b.quantity,
             'resident_name': b.resident_name,
             'status': b.status,
             'request_date': b.request_date.strftime('%Y-%m-%d'),
+            'borrow_date': b.borrow_date.strftime('%Y-%m-%d'),
             'return_date': b.return_date.strftime('%Y-%m-%d')
         })
     return jsonify(result)
@@ -1055,7 +1057,6 @@ def get_all_reservations():
         })
     return jsonify(result)
 
-
 @app.route('/api/borrow', methods=['POST'])
 def borrow_asset():
     data = request.get_json()
@@ -1063,20 +1064,20 @@ def borrow_asset():
         new_borrow = Borrowing(
             asset_id=data['asset_id'],
             resident_name=data['resident_name'],
-            item=data['item'],  # ✅ FIX: Include item here
+            item=data['item'],
             quantity=data['quantity'],
             purpose=data['purpose'],
             status='Pending',
-            request_date=datetime.strptime(data['request_date'], '%Y-%m-%d'),
-            return_date=datetime.strptime(data['return_date'], '%Y-%m-%d'),
-            borrow_date=datetime.strptime(data['borrow_date'], '%Y-%m-%d')
-
+            request_date=datetime.strptime(data['request_date'], '%Y-%m-%d').date(),
+            borrow_date=datetime.strptime(data['borrow_date'], '%Y-%m-%d').date(),
+            return_date=datetime.strptime(data['return_date'], '%Y-%m-%d').date()
         )
         db.session.add(new_borrow)
         db.session.commit()
         return jsonify({'message': 'Borrowing request submitted successfully'}), 200
     except Exception as e:
         return jsonify({'error': str(e)}), 400
+
 
 
 
@@ -1271,13 +1272,11 @@ def confirm_return(borrow_id):
         return jsonify({'error': str(e)}), 500
 
     
-@app.route('/api/borrowings/<string:resident_name>', methods=['GET'])
+@@app.route('/api/borrowings/<string:resident_name>', methods=['GET'])
 def get_borrowings_by_resident(resident_name):
     borrowings = Borrowing.query.filter_by(resident_name=resident_name).filter(
         Borrowing.status.in_(['Approved', 'Return Requested'])
     ).all()
-
-    print(f"Borrowings for {resident_name}: {[b.status for b in borrowings]}")
 
     result = []
     for b in borrowings:
@@ -1286,6 +1285,7 @@ def get_borrowings_by_resident(resident_name):
             'item': b.item,
             'quantity': b.quantity,
             'request_date': b.request_date.strftime('%Y-%m-%d'),
+            'borrow_date': b.borrow_date.strftime('%Y-%m-%d'),
             'return_date': b.return_date.strftime('%Y-%m-%d'),
             'status': b.status
         })
@@ -1298,9 +1298,11 @@ def get_pending_borrowings(resident_name):
     result = []
     for b in borrowings:
         result.append({
+            'id': b.id,
             'item': b.item,
             'quantity': b.quantity,
             'request_date': b.request_date.strftime('%Y-%m-%d'),
+            'borrow_date': b.borrow_date.strftime('%Y-%m-%d'),
             'return_date': b.return_date.strftime('%Y-%m-%d'),
             'status': b.status
         })
