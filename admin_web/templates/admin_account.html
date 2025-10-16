@@ -181,27 +181,59 @@
         </div>
       </div>
 
-     <!-- Activity Log Card -->
-      <div class="card p-4 mb-4">
-        <h4 class="mb-3 text-center">Activity Log</h4>
-        {% if activities %}
-          <ul class="list-group list-group-flush" id="activityList">
-            {% for activity in activities %}
-              <li class="list-group-item d-flex justify-content-between align-items-start {% if loop.index > 5 %}d-none extra-activity{% endif %}">
-                <div>{{ activity.action }}</div>
-                <small class="text-muted">{{ activity.timestamp.strftime('%Y-%m-%d %H:%M:%S') }}</small>
-              </li>
-            {% endfor %}
-          </ul>
-          {% if activities|length > 5 %}
-            <div class="text-center mt-2">
-              <button class="btn btn-outline-secondary btn-sm" id="toggleActivities">Show More</button>
-            </div>
-          {% endif %}
-        {% else %}
-          <p class="text-center text-muted mb-0">No activity yet.</p>
-        {% endif %}
+    <!-- Activity Log Card -->
+    <div class="card p-4 mb-4">
+      <h4 class="mb-3 text-center">Activity Log</h4>
+    
+      <!-- Filters -->
+      <div class="d-flex flex-wrap justify-content-between mb-3">
+        <div class="d-flex gap-2 flex-wrap">
+          <div class="input-group" style="width: 250px;">
+            <span class="input-group-text bg-white border-end-0"><i class="bi bi-search text-muted"></i></span>
+            <input type="text" id="activitySearch" class="form-control border-start-0" placeholder="Search action or user">
+          </div>
+          <div class="input-group" style="width: 200px;">
+            <span class="input-group-text bg-white border-end-0"><i class="bi bi-calendar-event text-muted"></i></span>
+            <input type="date" id="activityDate" class="form-control border-start-0">
+          </div>
+        </div>
+        <div class="d-flex gap-2">
+          <button class="btn btn-sm text-white" style="background-color: #b30000;" onclick="exportActivityToPDF()">
+            <i class="bi bi-filetype-pdf me-1"></i> Export
+          </button>
+          <button class="btn btn-sm text-dark" style="background-color: #FFC100;" onclick="printActivity()">
+            <i class="bi bi-printer me-1"></i> Print
+          </button>
+        </div>
       </div>
+    
+      <!-- Table -->
+      <div class="table-responsive">
+        <table id="activityTable" class="table table-bordered table-hover align-middle">
+          <thead class="table-light">
+            <tr>
+              <th>User</th>
+              <th>Action</th>
+              <th>Description</th>
+              <th>Date & Time</th>
+            </tr>
+          </thead>
+          <tbody id="activityTbody">
+            {% for activity in activities %}
+            <tr class="export-visible">
+              <td>{{ activity.user_name or 'N/A' }}</td>
+              <td>{{ activity.action or 'N/A' }}</td>
+              <td>{{ activity.description or 'N/A' }}</td>
+              <td>{{ activity.timestamp.strftime('%Y-%m-%d %H:%M:%S') }}</td>
+            </tr>
+            {% endfor %}
+            <tr id="noActivityRow" style="display:none;">
+              <td colspan="4" class="text-center text-muted">No records found.</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
 
 
     </main>
@@ -212,6 +244,105 @@
 <script src="https://unpkg.com/aos@2.3.1/dist/aos.js"></script>
 <script>
   AOS.init();
+
+   // Filter function for Activity Log
+  function filterActivityLog() {
+    const search = document.getElementById('activitySearch').value.toLowerCase();
+    const date = document.getElementById('activityDate').value;
+    const rows = document.querySelectorAll('#activityTbody tr');
+
+    let visibleCount = 0;
+    rows.forEach(row => {
+      if (row.id && row.id.startsWith('no')) return;
+
+      const cells = row.querySelectorAll('td');
+      const userActionDesc = (cells[0].textContent + ' ' + cells[1].textContent + ' ' + cells[2].textContent).toLowerCase();
+      const rowDate = cells[3].textContent.split(' ')[0];
+
+      const matchesSearch = !search || userActionDesc.includes(search);
+      const matchesDate = !date || rowDate === date;
+
+      const visible = matchesSearch && matchesDate;
+      row.style.display = visible ? '' : 'none';
+      row.classList.toggle('export-visible', visible);
+      if (visible) visibleCount++;
+    });
+
+    document.getElementById('noActivityRow').style.display = visibleCount === 0 ? '' : 'none';
+  }
+
+  document.getElementById('activitySearch').addEventListener('input', filterActivityLog);
+  document.getElementById('activityDate').addEventListener('change', filterActivityLog);
+
+  // Export & Print (similar to history page)
+  async function exportActivityToPDF() {
+    const rows = document.querySelectorAll('#activityTable tbody tr.export-visible');
+    if (!rows.length) return alert('No visible records to export.');
+
+    const header = await buildExportHeader();
+    const tableClone = document.getElementById('activityTable').cloneNode(true);
+    const tbody = tableClone.querySelector('tbody');
+    Array.from(tbody.rows).forEach(r => { if (!r.classList.contains('export-visible')) tbody.removeChild(r); });
+
+    tableClone.style.borderCollapse = 'collapse';
+    tableClone.querySelectorAll('th,td').forEach(c => {
+      c.style.border = '0.5px solid black';
+      c.style.padding = '4px';
+      c.style.textAlign = 'center';
+      c.style.fontSize = '12px';
+    });
+
+    const container = document.createElement('div');
+    container.innerHTML = header + '<div style="text-align:center; margin:12px 0; font-weight:700; font-size:14px;">ACTIVITY LOG</div>';
+    container.appendChild(tableClone);
+    container.appendChild(document.createElement('div').innerHTML = buildExportFooter());
+
+    html2pdf().from(container).set({
+      margin: [0.5, 0.5, 0.5, 0.5],
+      filename: 'BARMA-Activity-Log.pdf',
+      image: { type: 'jpeg', quality: 1 },
+      html2canvas: { scale: 2 },
+      jsPDF: { unit: 'in', format: 'letter', orientation: 'portrait' }
+    }).save();
+  }
+
+  async function printActivity() {
+    const rows = document.querySelectorAll('#activityTable tbody tr.export-visible');
+    if (!rows.length) return alert('No visible records to print.');
+
+    const header = await buildExportHeader();
+    const tableClone = document.getElementById('activityTable').cloneNode(true);
+    Array.from(tableClone.querySelectorAll('tbody tr')).forEach(r => { 
+      if (!r.classList.contains('export-visible')) r.remove(); 
+    });
+
+    const style = `
+      <style>
+        body { font-family: Arial, sans-serif; padding: 20px; color: #000; }
+        table { border-collapse: collapse; width: 100%; margin-top: 8px; }
+        th, td { border: 0.5px solid black; padding: 4px; text-align: center; font-size: 12px; }
+        th { font-weight: bold; }
+      </style>
+    `;
+
+    const printWindow = window.open('', '_blank', 'width=800,height=600');
+    printWindow.document.write(`
+      <html>
+        <head>
+          <title>Print</title>
+          ${style}
+        </head>
+        <body>
+          ${header}
+          <div style="text-align:center; margin:12px 0; font-weight:700; font-size:14px;">ACTIVITY LOG</div>
+          ${tableClone.outerHTML}
+          ${buildExportFooter()}
+        </body>
+      </html>
+    `);
+    printWindow.document.close();
+    printWindow.onload = () => { printWindow.focus(); printWindow.print(); };
+  }
 
   document.addEventListener('DOMContentLoaded', function() {
     const toggleBtn = document.getElementById('toggleActivities');
