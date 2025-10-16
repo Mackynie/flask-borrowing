@@ -1857,7 +1857,11 @@ def admin_account():
         flash('Account updated successfully!', 'success')
         return redirect(url_for('admin_account'))
 
-    return render_template('admin_account.html', admin=admin)
+    # Fetch activities (most recent first)
+    activities = AdminActivity.query.filter_by(admin_id=admin.id).order_by(AdminActivity.timestamp.desc()).all()
+
+    return render_template('admin_account.html', admin=admin, activities=activities)
+
 
 
 
