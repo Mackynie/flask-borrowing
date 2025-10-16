@@ -472,24 +472,27 @@ def edit_asset(id):
         old_quantity = asset.quantity
         old_classification = asset.classification
 
+        # Update asset
         asset.name = request.form['name'].strip()
         asset.quantity = int(request.form['quantity'])
         asset.classification = request.form['classification']
-        db.session.commit()
 
-        # Log activity
+        # Log activity before commit
         new_activity = AdminActivity(
             admin_id=admin_id,
             action=f"Edited asset: {old_name} (Qty: {old_quantity}, Class: {old_classification}) → "
                    f"{asset.name} (Qty: {asset.quantity}, Class: {asset.classification})"
         )
         db.session.add(new_activity)
+
+        # Commit both changes together
         db.session.commit()
 
         flash("Asset updated successfully!", "success")
         return redirect(url_for('assets_page'))
 
     return render_template('edit_asset.html', asset=asset)
+
 
 
 @app.route('/delete_asset/<int:id>')
