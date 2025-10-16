@@ -123,6 +123,7 @@
           <h4 class="text-center mb-2">{{ admin.full_name }}</h4>
           <p class="text-center text-muted">{{ admin.position }}</p>
           <p class="text-center text-secondary"><strong>Username:</strong> {{ admin.username }}</p>
+          <p class="text-center text-secondary"><strong>Phone:</strong> {{ admin.phone_number or 'N/A' }}</p> <!-- ✅ Added phone display -->
 
           <!-- Update Button -->
           <div class="text-center mt-3">
@@ -149,6 +150,10 @@
                     <option value="Chairman" {% if admin.position == 'Chairman' %}selected{% endif %}>Chairman</option>
                     <option value="Secretary" {% if admin.position == 'Secretary' %}selected{% endif %}>Secretary</option>
                   </select>
+                </div>
+                <div class="mb-3">
+                  <label class="form-label">Phone Number</label> <!-- ✅ Added phone number input -->
+                  <input type="text" class="form-control" name="phone_number" value="{{ admin.phone_number or '' }}" placeholder="e.g. 09123456789" required>
                 </div>
                 <div class="mb-3">
                   <label class="form-label">Change Password</label>
@@ -195,14 +200,13 @@
                   <th>Date & Time</th>
                 </tr>
               </thead>
-             <tbody id="activityTbody">
+              <tbody id="activityTbody">
                 {% for activity in activities %}
                   <tr class="export-visible">
                     <td>{{ activity.action or 'N/A' }}</td>
                     <td>{{ activity.timestamp.strftime('%Y-%m-%d %H:%M:%S') }}</td>
                   </tr>
                 {% endfor %}
-
                 <tr id="noActivityRow" style="display:none;">
                   <td colspan="2" class="text-center text-muted">No records found.</td>
                 </tr>
@@ -220,20 +224,18 @@
   <script>
     AOS.init();
 
-    const adminName = "{{ admin.full_name }}"; // for "Printed by"
+    const adminName = "{{ admin.full_name }}";
 
-    // Convert image URL to Base64
     async function toBase64(url) {
-      const res = await fetch(url,{cache:"no-store"});
+      const res = await fetch(url, {cache: "no-store"});
       const blob = await res.blob();
-      return new Promise(resolve=>{
-        const reader=new FileReader();
-        reader.onloadend=()=>resolve(reader.result);
+      return new Promise(resolve => {
+        const reader = new FileReader();
+        reader.onloadend = () => resolve(reader.result);
         reader.readAsDataURL(blob);
       });
     }
 
-    // Build header with logos
     async function buildExportHeader() {
       const pob5Logo = await toBase64("{{ url_for('static', filename='img/POB5.jpg') }}");
       const barmaLogo = await toBase64("{{ url_for('static', filename='img/logo3.png') }}");
@@ -251,7 +253,6 @@
       `;
     }
 
-    // Report title
     function buildReportTitle() {
       const search = document.getElementById('activitySearch').value || 'All';
       const dateFilter = document.getElementById('activityDate').value || 'All Dates';
@@ -263,7 +264,6 @@
       `;
     }
 
-    // Footer with printed date/by
     function buildExportFooter() {
       const today = new Date().toLocaleDateString();
       return `
