@@ -169,6 +169,8 @@ class Admin(db.Model):
     position = db.Column(db.String(100), nullable=False)
     username = db.Column(db.String(80), unique=True, nullable=False)
     password_hash = db.Column(db.String(200), nullable=False)
+    phone_number = db.Column(db.String(15), nullable=True)
+
 
     def set_password(self, password):
         self.password_hash = generate_password_hash(password)
@@ -2002,6 +2004,7 @@ def admin_account():
         admin.full_name = request.form['full_name']
         admin.username = request.form['username']
         admin.position = request.form['position']
+        admin.phone_number = request.form['phone_number']
 
         password = request.form.get('password')
         if password:
