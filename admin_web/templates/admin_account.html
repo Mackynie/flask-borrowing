@@ -23,7 +23,6 @@
       background-color: var(--light-yellow);
     }
 
-    /* Card Styling */
     .card {
       border-radius: 12px;
       box-shadow: 0 6px 18px rgba(0,0,0,0.08);
@@ -36,7 +35,6 @@
       font-weight: 600;
     }
 
-    /* Form Inputs */
     .form-label {
       font-weight: 500;
       color: var(--dark-red);
@@ -47,7 +45,6 @@
       box-shadow: 0 0 5px rgba(255,101,0,0.4);
     }
 
-    /* Custom Button */
     .btn-custom {
       background: var(--orange);
       color: #fff;
@@ -60,7 +57,6 @@
       color: #fff;
     }
 
-    /* Profile Avatar */
     .profile-avatar {
       width: 120px;
       height: 120px;
@@ -97,6 +93,7 @@
         <li class="nav-item"><a class="nav-link" href="{{ url_for('dashboard') }}"><i class="bi bi-speedometer2 me-2"></i>Dashboard</a></li>
         <li class="nav-item"><a class="nav-link" href="{{ url_for('assets_page') }}"><i class="bi bi-box-seam me-2"></i>Assets</a></li>
         <li class="nav-item"><a class="nav-link" href="{{ url_for('reservations_page') }}"><i class="bi bi-calendar-check me-2"></i>Reservations</a></li>
+        <li class="nav-item"><a class="nav-link" href="{{ url_for('borrowings_page') }}"><i class="bi bi-arrow-left-right me-2"></i>Borrowing</a></li>
         <li class="nav-item"><a class="nav-link" href="{{ url_for('manage_accounts') }}"><i class="bi bi-people-fill me-2"></i>Accounts</a></li>
         <li class="nav-item"><a class="nav-link" href="{{ url_for('history_page') }}"><i class="bi bi-clock-history me-2"></i>History</a></li>
         <li class="nav-item"><a class="nav-link active" href="{{ url_for('admin_account') }}"><i class="bi bi-person-circle me-2"></i>My Account</a></li>
@@ -117,7 +114,7 @@
     <main class="col-md-10 ms-sm-auto px-4 mt-4">
       <h1 class="fw-bold mb-4 text-center" data-aos="fade-down">Admin Account</h1>
 
-      <!-- Flash Messages Above Card -->
+      <!-- Flash Messages -->
       <div class="col-md-8 mx-auto">
         {% with messages = get_flashed_messages(with_categories=true) %}
           {% if messages %}
@@ -133,9 +130,7 @@
 
       <!-- Personal Details Card -->
       <div class="card p-4 mb-4">
-        <div class="profile-avatar">
-          <i class="bi bi-person-fill"></i>
-        </div>
+        <div class="profile-avatar"><i class="bi bi-person-fill"></i></div>
         <h4 class="text-center mb-2">{{ admin.full_name }}</h4>
         <p class="text-center text-muted">{{ admin.position }}</p>
         <p class="text-center text-secondary"><strong>Username:</strong> {{ admin.username }}</p>
@@ -190,7 +185,7 @@
           <div class="d-flex gap-2 flex-wrap">
             <div class="input-group" style="width: 250px;">
               <span class="input-group-text bg-white border-end-0"><i class="bi bi-search text-muted"></i></span>
-              <input type="text" id="activitySearch" class="form-control border-start-0" placeholder="Search action or user">
+              <input type="text" id="activitySearch" class="form-control border-start-0" placeholder="Search action">
             </div>
             <div class="input-group" style="width: 200px;">
               <span class="input-group-text bg-white border-end-0"><i class="bi bi-calendar-event text-muted"></i></span>
@@ -219,14 +214,12 @@
             <tbody id="activityTbody">
               {% for activity in activities %}
               <tr class="export-visible">
-                <td>{{ activity.user_name or 'N/A' }}</td>
                 <td>{{ activity.action or 'N/A' }}</td>
-                <td>{{ activity.description or 'N/A' }}</td>
                 <td>{{ activity.timestamp.strftime('%Y-%m-%d %H:%M:%S') }}</td>
               </tr>
               {% endfor %}
               <tr id="noActivityRow" style="display:none;">
-                <td colspan="4" class="text-center text-muted">No records found.</td>
+                <td colspan="2" class="text-center text-muted">No records found.</td>
               </tr>
             </tbody>
           </table>
@@ -243,21 +236,17 @@
   AOS.init();
 
   function buildExportHeader() {
-    return `
-      <div style="text-align:center; font-weight:bold; font-size:16px;">
-        Barangay Resource Management System (BARMA)<br>
-        Barangay XYZ
-      </div>`;
+    return `<div style="text-align:center; font-weight:bold; font-size:16px;">
+      Barangay Resource Management System (BARMA)<br>Barangay XYZ
+    </div>`;
   }
 
   function buildExportFooter() {
-    return `
-      <div style="text-align:center; margin-top:10px; font-size:12px;">
-        Generated on ${new Date().toLocaleString()}
-      </div>`;
+    return `<div style="text-align:center; margin-top:10px; font-size:12px;">
+      Generated on ${new Date().toLocaleString()}
+    </div>`;
   }
 
-  // Filter function for Activity Log
   function filterActivityLog() {
     const search = document.getElementById('activitySearch').value.toLowerCase();
     const date = document.getElementById('activityDate').value;
@@ -268,13 +257,10 @@
       if (row.id && row.id.startsWith('no')) return;
 
       const cells = row.querySelectorAll('td');
-      const userActionDesc = (cells[0].textContent + ' ' + cells[1].textContent + ' ' + cells[2].textContent).toLowerCase();
-      const rowDate = cells[3].textContent.split(' ')[0];
+      const actionText = cells[0].textContent.toLowerCase();
+      const rowDate = cells[1].textContent.split(' ')[0];
 
-      const matchesSearch = !search || userActionDesc.includes(search);
-      const matchesDate = !date || rowDate === date;
-
-      const visible = matchesSearch && matchesDate;
+      const visible = (!search || actionText.includes(search)) && (!date || rowDate === date);
       row.style.display = visible ? '' : 'none';
       row.classList.toggle('export-visible', visible);
       if (visible) visibleCount++;
@@ -286,23 +272,16 @@
   document.getElementById('activitySearch').addEventListener('input', filterActivityLog);
   document.getElementById('activityDate').addEventListener('change', filterActivityLog);
 
-  // Export to PDF
   async function exportActivityToPDF() {
     const rows = document.querySelectorAll('#activityTable tbody tr.export-visible');
     if (!rows.length) return alert('No visible records to export.');
 
     const header = buildExportHeader();
     const tableClone = document.getElementById('activityTable').cloneNode(true);
-    const tbody = tableClone.querySelector('tbody');
-    Array.from(tbody.rows).forEach(r => { if (!r.classList.contains('export-visible')) tbody.removeChild(r); });
+    Array.from(tableClone.querySelectorAll('tbody tr')).forEach(r => { if (!r.classList.contains('export-visible')) r.remove(); });
 
     tableClone.style.borderCollapse = 'collapse';
-    tableClone.querySelectorAll('th,td').forEach(c => {
-      c.style.border = '0.5px solid black';
-      c.style.padding = '4px';
-      c.style.textAlign = 'center';
-      c.style.fontSize = '12px';
-    });
+    tableClone.querySelectorAll('th,td').forEach(c => { c.style.border='0.5px solid black'; c.style.padding='4px'; c.style.textAlign='center'; c.style.fontSize='12px'; });
 
     const container = document.createElement('div');
     container.innerHTML = header + '<div style="text-align:center; margin:12px 0; font-weight:700; font-size:14px;">ACTIVITY LOG</div>';
@@ -313,11 +292,11 @@
     container.appendChild(footerDiv);
 
     html2pdf().from(container).set({
-      margin: [0.5, 0.5, 0.5, 0.5],
+      margin: [0.5,0.5,0.5,0.5],
       filename: 'BARMA-Activity-Log.pdf',
-      image: { type: 'jpeg', quality: 1 },
-      html2canvas: { scale: 2 },
-      jsPDF: { unit: 'in', format: 'letter', orientation: 'portrait' }
+      image: { type:'jpeg', quality:1 },
+      html2canvas: { scale:2 },
+      jsPDF: { unit:'in', format:'letter', orientation:'portrait' }
     }).save();
   }
 
@@ -327,34 +306,17 @@
 
     const header = buildExportHeader();
     const tableClone = document.getElementById('activityTable').cloneNode(true);
-    Array.from(tableClone.querySelectorAll('tbody tr')).forEach(r => { 
-      if (!r.classList.contains('export-visible')) r.remove(); 
-    });
+    Array.from(tableClone.querySelectorAll('tbody tr')).forEach(r => { if (!r.classList.contains('export-visible')) r.remove(); });
 
-    const style = `
-      <style>
-        body { font-family: Arial, sans-serif; padding: 20px; color: #000; }
-        table { border-collapse: collapse; width: 100%; margin-top: 8px; }
-        th, td { border: 0.5px solid black; padding: 4px; text-align: center; font-size: 12px; }
-        th { font-weight: bold; }
-      </style>
-    `;
+    const style = `<style>
+      body { font-family: Arial, sans-serif; padding: 20px; color: #000; }
+      table { border-collapse: collapse; width: 100%; margin-top: 8px; }
+      th, td { border: 0.5px solid black; padding: 4px; text-align: center; font-size: 12px; }
+      th { font-weight: bold; }
+    </style>`;
 
     const printWindow = window.open('', '_blank', 'width=800,height=600');
-    printWindow.document.write(`
-      <html>
-        <head>
-          <title>Print</title>
-          ${style}
-        </head>
-        <body>
-          ${header}
-          <div style="text-align:center; margin:12px 0; font-weight:700; font-size:14px;">ACTIVITY LOG</div>
-          ${tableClone.outerHTML}
-          ${buildExportFooter()}
-        </body>
-      </html>
-    `);
+    printWindow.document.write(`<html><head><title>Print</title>${style}</head><body>${header}<div style="text-align:center; margin:12px 0; font-weight:700; font-size:14px;">ACTIVITY LOG</div>${tableClone.outerHTML}${buildExportFooter()}</body></html>`);
     printWindow.document.close();
     printWindow.onload = () => { printWindow.focus(); printWindow.print(); };
   }
