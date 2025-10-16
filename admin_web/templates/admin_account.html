@@ -181,24 +181,28 @@
         </div>
       </div>
 
-      <!-- Activity Log Card -->
+     <!-- Activity Log Card -->
       <div class="card p-4 mb-4">
         <h4 class="mb-3 text-center">Activity Log</h4>
         {% if activities %}
-          <ul class="list-group list-group-flush">
+          <ul class="list-group list-group-flush" id="activityList">
             {% for activity in activities %}
-              <li class="list-group-item d-flex justify-content-between align-items-start">
-                <div>
-                  {{ activity.action }}
-                </div>
+              <li class="list-group-item d-flex justify-content-between align-items-start {% if loop.index > 5 %}d-none extra-activity{% endif %}">
+                <div>{{ activity.action }}</div>
                 <small class="text-muted">{{ activity.timestamp.strftime('%Y-%m-%d %H:%M:%S') }}</small>
               </li>
             {% endfor %}
           </ul>
+          {% if activities|length > 5 %}
+            <div class="text-center mt-2">
+              <button class="btn btn-outline-secondary btn-sm" id="toggleActivities">Show More</button>
+            </div>
+          {% endif %}
         {% else %}
           <p class="text-center text-muted mb-0">No activity yet.</p>
         {% endif %}
       </div>
+
 
     </main>
   </div>
@@ -208,6 +212,22 @@
 <script src="https://unpkg.com/aos@2.3.1/dist/aos.js"></script>
 <script>
   AOS.init();
+
+  document.addEventListener('DOMContentLoaded', function() {
+    const toggleBtn = document.getElementById('toggleActivities');
+    if (toggleBtn) {
+      toggleBtn.addEventListener('click', function() {
+        const extraActivities = document.querySelectorAll('.extra-activity');
+        const isHidden = extraActivities[0].classList.contains('d-none');
+
+        extraActivities.forEach(item => {
+          item.classList.toggle('d-none', !isHidden);
+        });
+
+        toggleBtn.textContent = isHidden ? 'Show Less' : 'Show More';
+      });
+    }
+  });
 </script>
 </body>
 </html>
