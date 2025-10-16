@@ -1274,22 +1274,21 @@ def confirm_return(borrow_id):
     
 @app.route('/api/borrowings/<string:resident_name>', methods=['GET'])
 def get_borrowings_by_resident(resident_name):
-    borrowings = Borrowing.query.filter_by(resident_name=resident_name).filter(
-        Borrowing.status.in_(['Approved', 'Return Requested'])
-    ).all()
-
-    result = []
-    for b in borrowings:
-        result.append({
+    borrowings = Borrowing.query.filter_by(resident_name=resident_name).all()
+    return jsonify([
+        {
             'id': b.id,
+            'asset_id': b.asset_id,
             'item': b.item,
             'quantity': b.quantity,
-            'request_date': b.request_date.strftime('%Y-%m-%d'),
-            'borrow_date': b.borrow_date.strftime('%Y-%m-%d'),
-            'return_date': b.return_date.strftime('%Y-%m-%d'),
-            'status': b.status
-        })
-    return jsonify(result)
+            'purpose': b.purpose,
+            'status': b.status,
+            'request_date': b.request_date.strftime('%Y-%m-%d') if b.request_date else None,
+            'borrow_date': b.borrow_date.strftime('%Y-%m-%d') if b.borrow_date else None,
+            'return_date': b.return_date.strftime('%Y-%m-%d') if b.return_date else None
+        } for b in borrowings
+    ])
+
 
 @app.route('/api/pending-borrowings/<string:resident_name>', methods=['GET'])
 def get_pending_borrowings(resident_name):
