@@ -201,7 +201,7 @@ class AdminActivity(db.Model):
     id = db.Column(db.Integer, primary_key=True, autoincrement=True)
     admin_id = db.Column(db.Integer, db.ForeignKey('admins.id'), nullable=False)
     action = db.Column(db.Text, nullable=False)
-    timestamp = db.Column(db.DateTime, default=datetime.cnow)
+    timestamp = db.Column(db.DateTime, default=datetime.now)
 
     admin = db.relationship('Admin', backref='activities')
 
