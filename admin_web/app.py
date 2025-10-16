@@ -821,17 +821,34 @@ def history_page():
 
 @app.route('/return_borrowing/<int:borrowing_id>', methods=['POST'])
 def return_borrowing(borrowing_id): 
+    if not session.get('admin'):
+        flash("Admin not logged in.", "danger")
+        return redirect(url_for('login'))
+
+    admin_id = session.get('admin_id')
+    if not admin_id:
+        flash("Admin session expired. Please log in again.", "danger")
+        return redirect(url_for('login'))
+
     borrowing = Borrowing.query.get_or_404(borrowing_id)
     
     if borrowing.status.lower() == "approved": 
         borrowing.status = "Returned"
+
+        # Log activity
+        new_activity = AdminActivity(
+            admin_id=admin_id,
+            action=f"Marked borrowing as returned: {borrowing.resident_name} ({borrowing.item}, Qty: {borrowing.quantity})"
+        )
+        db.session.add(new_activity)
+
         db.session.commit() 
         flash('Item marked as returned.', 'success')
     else: 
         flash('Only approved borrowings can be returned.', 'info') 
     
-    
     return redirect(url_for('manage_borrowing'))
+
 
 
 
@@ -1350,6 +1367,11 @@ def update_asset(id):
     if not session.get('admin'):
         return redirect(url_for('login'))
 
+    admin_id = session.get('admin_id')
+    if not admin_id:
+        flash("Admin session expired. Please log in again.", "danger")
+        return redirect(url_for('login'))
+
     # Read form values
     name = request.form['name'].strip()
     quantity = int(request.form['quantity'])
@@ -1358,20 +1380,35 @@ def update_asset(id):
     # Get current asset
     asset = Asset.query.get_or_404(id)
 
-    # ✅ Check if new name already exists on another asset
+    # Check if new name already exists on another asset
     duplicate = Asset.query.filter(
         Asset.name == name,
-        Asset.id != id  # exclude the same asset from the check
+        Asset.id != id
     ).first()
 
     if duplicate:
         flash('Asset name already exists. Please use a different name.', 'danger')
         return redirect(url_for('assets_page'))
 
-    # ✅ If no duplicate, update normally
+    # Store old values for activity log
+    old_name = asset.name
+    old_quantity = asset.quantity
+    old_classification = asset.classification
+
+    # Update asset
     asset.name = name
     asset.quantity = quantity
     asset.classification = classification
+
+    # Log admin activity before commit
+    new_activity = AdminActivity(
+        admin_id=admin_id,
+        action=f"Updated asset: {old_name} (Qty: {old_quantity}, Class: {old_classification}) → "
+               f"{asset.name} (Qty: {asset.quantity}, Class: {asset.classification})"
+    )
+    db.session.add(new_activity)
+
+    # Commit both asset update and activity
     db.session.commit()
 
     flash('Asset updated successfully!', 'success')
@@ -1887,7 +1924,21 @@ def get_reservations_for_asset_and_date(asset_id, date):
 
 @app.route('/edit_resident/<int:id>', methods=['POST'])
 def edit_resident(id):
+    if not session.get('admin'):
+        flash("Admin not logged in.", "danger")
+        return redirect(url_for('login'))
+
+    admin_id = session.get('admin_id')
+    if not admin_id:
+        flash("Admin session expired. Please log in again.", "danger")
+        return redirect(url_for('login'))
+
     resident = Resident.query.get_or_404(id)
+
+    old_full_name = resident.full_name
+    old_username = resident.username
+    old_phone_number = resident.phone_number
+    old_purok = resident.purok
 
     full_name = request.form.get('full_name').strip()
     username = request.form.get('username').strip()
@@ -1905,11 +1956,19 @@ def edit_resident(id):
         flash('Username already taken.', 'danger')
         return redirect(url_for('manage_accounts'))
 
-    # Update the resident
+    # Update resident
     resident.full_name = full_name
     resident.username = username
     resident.phone_number = phone_number
     resident.purok = purok
+
+    # Log admin activity before commit
+    new_activity = AdminActivity(
+        admin_id=admin_id,
+        action=f"Edited resident: {old_full_name} (Username: {old_username}, Phone: {old_phone_number}, Purok: {old_purok}) → "
+               f"{full_name} (Username: {username}, Phone: {phone_number}, Purok: {purok})"
+    )
+    db.session.add(new_activity)
 
     try:
         db.session.commit()
@@ -1919,6 +1978,7 @@ def edit_resident(id):
         flash('Error updating resident: ' + str(e), 'danger')
 
     return redirect(url_for('manage_accounts'))
+
 
 @app.route('/admin_account', methods=['GET', 'POST'])
 def admin_account():
