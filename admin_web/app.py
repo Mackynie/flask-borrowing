@@ -2036,6 +2036,73 @@ def admin_account():
 
     return render_template('admin_account.html', admin=admin, activities=activities)
 
+@app.route('/admin/forgot_password', methods=['GET', 'POST'])
+def admin_forgot_password():
+    if request.method == 'POST':
+        username = request.form.get('username', '').strip()
+        admin = Admin.query.filter_by(username=username).first()
+
+        if not admin:
+            return render_template('admin_forgot_password.html', error="Admin not found.")
+        if not admin.phone_number:
+            return render_template('admin_forgot_password.html', error="No phone number associated with this admin.")
+
+        # Generate OTP
+        otp = ''.join(random.choices(string.digits, k=6))
+        otp_store[username] = {'otp': otp, 'expires': time.time() + 300}
+
+        # Send OTP via TextBee
+        message = f"Your BARMA Admin password reset code is: {otp}. It expires in 5 minutes."
+        send_sms(admin.phone_number, message)
+
+        return redirect(url_for('admin_verify_otp', username=username))
+
+    return render_template('admin_forgot_password.html')
+
+@app.route('/admin/verify_otp/<username>', methods=['GET', 'POST'])
+def admin_verify_otp(username):
+    if request.method == 'POST':
+        otp = request.form.get('otp', '').strip()
+
+        if username not in otp_store:
+            return render_template('admin_verify_otp.html', error="No OTP found.", username=username)
+
+        stored = otp_store[username]
+        if time.time() > stored['expires']:
+            otp_store.pop(username, None)
+            return render_template('admin_verify_otp.html', error="OTP expired.", username=username)
+
+        if stored['otp'] != otp:
+            return render_template('admin_verify_otp.html', error="Invalid OTP.", username=username)
+
+        otp_store[username]['verified'] = True
+        return redirect(url_for('admin_reset_password', username=username))
+
+    return render_template('admin_verify_otp.html', username=username)
+
+@app.route('/admin/reset_password/<username>', methods=['GET', 'POST'])
+def admin_reset_password(username):
+    if request.method == 'POST':
+        new_password = request.form.get('new_password', '').strip()
+        confirm_password = request.form.get('confirm_password', '').strip()
+
+        if new_password != confirm_password:
+            return render_template('admin_reset_password.html', error="Passwords do not match.", username=username)
+
+        if username not in otp_store or not otp_store[username].get('verified'):
+            return render_template('admin_reset_password.html', error="OTP verification required.", username=username)
+
+        admin = Admin.query.filter_by(username=username).first()
+        if not admin:
+            return render_template('admin_reset_password.html', error="Admin not found.", username=username)
+
+        admin.password_hash = generate_password_hash(new_password)
+        db.session.commit()
+        otp_store.pop(username, None)
+
+        return redirect(url_for('login'))
+
+    return render_template('admin_reset_password.html', username=username)
 
 
 
