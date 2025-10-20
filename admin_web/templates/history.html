@@ -169,8 +169,13 @@
                       <td>{{ h.item or 'N/A' }}</td>
                       <td>{{ h.quantity or 'N/A' }}</td>
                       <td>{{ h.purpose or 'N/A' }}</td>
-                      <td>{{ h.borrow_date.strftime('%Y-%m-%d') if h.borrow_date else 'N/A' }}</td>
-                      <td>{{ h.return_date.strftime('%Y-%m-%d') if h.return_date else 'N/A' }}</td>
+                      {% if h.type == 'Reservation' %}
+                        <td>{{ h.borrow_date.strftime('%Y-%m-%d %I:%M %p') if h.borrow_date else 'N/A' }}</td>
+                        <td>{{ h.return_date.strftime('%Y-%m-%d %I:%M %p') if h.return_date else 'N/A' }}</td>
+                      {% else %}
+                        <td>{{ h.borrow_date.strftime('%Y-%m-%d') if h.borrow_date else 'N/A' }}</td>
+                        <td>{{ h.return_date.strftime('%Y-%m-%d') if h.return_date else 'N/A' }}</td>
+                      {% endif %}
                       <td>
                         {% if h.action_type == 'Approved' %}
                           <span class="badge badge-approved">Approved</span>
