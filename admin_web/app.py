@@ -2082,6 +2082,7 @@ def admin_verify_otp(username):
         return redirect(url_for('admin_reset_password', username=username))
 
     return render_template('admin_verify_otp.html', username=username)
+    
 
 @app.route('/admin/reset_password/<username>', methods=['GET', 'POST'])
 def admin_reset_password(username):
@@ -2089,15 +2090,39 @@ def admin_reset_password(username):
         new_password = request.form.get('new_password', '').strip()
         confirm_password = request.form.get('confirm_password', '').strip()
 
+        # Password strength validation
+        if len(new_password) < 8 or \
+           not re.search(r"[A-Z]", new_password) or \
+           not re.search(r"[a-z]", new_password) or \
+           not re.search(r"\d", new_password) or \
+           not re.search(r"[!@#$%^&*(),.?\":{}|<>]", new_password):
+            return render_template(
+                'admin_reset_password.html',
+                error="Password is too weak. Please follow the password requirements.",
+                username=username
+            )
+
         if new_password != confirm_password:
-            return render_template('admin_reset_password.html', error="Passwords do not match.", username=username)
+            return render_template(
+                'admin_reset_password.html',
+                error="Passwords do not match.",
+                username=username
+            )
 
         if username not in otp_store or not otp_store[username].get('verified'):
-            return render_template('admin_reset_password.html', error="OTP verification required.", username=username)
+            return render_template(
+                'admin_reset_password.html',
+                error="OTP verification required.",
+                username=username
+            )
 
         admin = Admin.query.filter_by(username=username).first()
         if not admin:
-            return render_template('admin_reset_password.html', error="Admin not found.", username=username)
+            return render_template(
+                'admin_reset_password.html',
+                error="Admin not found.",
+                username=username
+            )
 
         admin.password_hash = generate_password_hash(new_password)
         db.session.commit()
