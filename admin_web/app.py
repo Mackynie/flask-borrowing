@@ -593,8 +593,8 @@ def approve_reservation(id):
     new_activity = AdminActivity(
         admin_id=session.get('admin_id'),
         action=f"Approved reservation: {reservation.item} for {reservation.resident_name} "
-               f"from {reservation.reservation_start.strftime('%Y-%m-%d')} "
-               f"to {reservation.reservation_end.strftime('%Y-%m-%d')}"
+               f"from {reservation.reservation_start.strftime('%Y-%m-%d %I:%M %p')} "
+               f"to {reservation.reservation_end.strftime('%Y-%m-%d %I:%M %p')}"
     )
     db.session.add(new_activity)
     db.session.commit()
@@ -605,8 +605,8 @@ def approve_reservation(id):
         send_sms(
             resident.phone_number,
             f"Hi {resident.full_name}, your reservation for {reservation.item} "
-            f"from {reservation.reservation_start.strftime('%Y-%m-%d')} "
-            f"to {reservation.reservation_end.strftime('%Y-%m-%d')} has been APPROVED."
+            f"from {reservation.reservation_start.strftime('%Y-%m-%d %I:%M %p')} "
+            f"to {reservation.reservation_end.strftime('%Y-%m-%d %I:%M %p')} has been APPROVED."
         )
 
     return redirect(url_for('dashboard'))
@@ -642,8 +642,8 @@ def reject_reservation(id):
     new_activity = AdminActivity(
         admin_id=session.get('admin_id'),
         action=f"Rejected reservation: {reservation.item} for {reservation.resident_name} "
-               f"from {reservation.reservation_start.strftime('%Y-%m-%d')} "
-               f"to {reservation.reservation_end.strftime('%Y-%m-%d')}. Reason: {reason}"
+               f"from {reservation.reservation_start.strftime('%Y-%m-%d %I:%M %p')} "
+               f"to {reservation.reservation_end.strftime('%Y-%m-%d %I:%M %p')}. Reason: {reason}"
     )
     db.session.add(new_activity)
     db.session.commit()
