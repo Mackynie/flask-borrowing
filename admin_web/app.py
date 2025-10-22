@@ -2097,8 +2097,8 @@ def admin_reset_password(username):
            not re.search(r"[!@#$%^&*(),.?\":{}|<>]", new_password):
             return render_template(
                 'admin_reset_password.html',
-                error="Password is too weak. Password must be at least 8 characters long and include
-                          an uppercase letter, a lowercase letter, a number, and a special character",
+                error = "Password is too weak. Password must be at least 8 characters long and include at least one uppercase letter, one lowercase letter, one number, and one special character.",
+
                 username=username
             )
 
