@@ -321,49 +321,7 @@ def restrict_overdue_accounts(admin_id=None):
 def home():
     return redirect(url_for('login'))
 
-PH_TZ = pytz.timezone('Asia/Manila')
 
-def send_return_reminders():
-    today_ph = datetime.now(PH_TZ).date()
-    tomorrow_ph = today_ph + timedelta(days=1)
-
-    # Only get borrowings that are approved, due tomorrow, and haven't been reminded yet
-    borrowings = Borrowing.query.filter(
-        func.date(Borrowing.return_date) == tomorrow_ph,
-        Borrowing.status == 'Approved',
-        Borrowing.reminder_sent == False  # ensures we don't send duplicate reminders
-    ).all()
-
-    print(f"Checking reminders for: {tomorrow_ph}, found: {len(borrowings)}")
-
-    for b in borrowings:
-        # Match resident by name
-        resident = Resident.query.filter_by(full_name=b.resident_name).first()
-        if resident and resident.phone_number:
-            message = (
-                f"Hi {resident.full_name}, this is a reminder to please return "
-                f"the {b.item} by {b.return_date}. Thank you!"
-            )
-
-            send_sms(resident.phone_number, message)
-            print(f"✅ Reminder sent to {resident.full_name}")
-
-            # Mark as reminded
-            b.reminder_sent = True
-            db.session.commit()
-        else:
-            print(f"⚠️ Resident not found or missing phone number for {b.resident_name}")
-
-
-
-
-# Scheduler: runs every 2 hours (PH time)
-scheduler = BackgroundScheduler(timezone=PH_TZ)
-scheduler.add_job(send_return_reminders, 'interval', hours=2)
-scheduler.start()
-
-with app.app_context():
-    send_return_reminders()
 
 @app.route('/login', methods=['GET', 'POST'])
 def login():
@@ -2131,8 +2089,46 @@ def admin_reset_password(username):
 
 
 
+PH_TZ = pytz.timezone('Asia/Manila')
+
+def send_return_reminders():
+    today_ph = datetime.now(PH_TZ).date()
+    tomorrow_ph = today_ph + timedelta(days=1)
+
+    borrowings = Borrowing.query.filter(
+        func.date(Borrowing.return_date) == tomorrow_ph,
+        Borrowing.status == 'Approved',
+        Borrowing.reminder_sent == False
+    ).all()
+
+    print(f"Checking reminders for: {tomorrow_ph}, found: {len(borrowings)}")
+
+    for b in borrowings:
+        resident = Resident.query.filter_by(full_name=b.resident_name).first()
+        if resident and resident.phone_number:
+            message = (
+                f"Hi {resident.full_name}, this is a reminder to please return "
+                f"the {b.item} by {b.return_date}. Thank you!"
+            )
+
+            send_sms(resident.phone_number, message)
+            print(f"✅ Reminder sent to {resident.full_name}")
+
+            b.reminder_sent = True
+            db.session.commit()
+        else:
+            print(f"⚠️ Resident not found or missing phone number for {b.resident_name}")
 
 
+# ✅ Run scheduler *after* Flask starts
 if __name__ == '__main__':
+    scheduler = BackgroundScheduler(timezone=PH_TZ)
+    scheduler.add_job(send_return_reminders, 'interval', hours=2)
+    scheduler.start()
+
+    # Run initial reminder safely inside context
+    with app.app_context():
+        send_return_reminders()
+
     app.run(host="0.0.0.0", port=5000, debug=True)
 
