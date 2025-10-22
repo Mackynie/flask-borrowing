@@ -31,6 +31,7 @@ from collections import Counter
 
 
 
+
 # Required for PyMySQL to work with SQLAlchemy
 pymysql.install_as_MySQLdb()
 
