@@ -180,9 +180,9 @@
                     <th>Item</th>
                     <th>Quantity</th>
                     <th>Purpose</th>
-                    <th>Borrow Date</th>
                     <th>Request Date</th>
-                    <th>Return Date</th>
+                    <th>Borrow Date (From)</th>
+                    <th>Return Date (To)</th>
                     <th>Status</th>
                     <th>Action</th>
                   </tr>
@@ -194,9 +194,11 @@
                     <td>{{ b.item }}</td>
                     <td>{{ b.quantity }}</td>
                     <td>{{ b.purpose }}</td>
-                    <td>{{ b.borrow_date.strftime('%Y-%m-%d') if b.borrow_date else 'N/A' }}</td>
                     <td>{{ b.request_date.strftime('%Y-%m-%d %I:%M %p') }}</td>
-                    <td>{{ b.return_date.strftime('%Y-%m-%d %I:%M %p') }}</td>
+                    <td>
+                      {{ b.borrow_date.strftime('%Y-%m-%d') if b.borrow_date else 'N/A' }} -
+                      {{ b.return_date.strftime('%Y-%m-%d %I:%M %p') }}
+                    </td>
                     <td><span class="badge bg-warning text-dark">{{ b.status }}</span></td>
                     <td>
                       <a href="{{ url_for('approve_borrowing', id=b.id) }}" class="btn btn-sm btn-success">Approve</a>
@@ -225,9 +227,9 @@
                     <th>Item</th>
                     <th>Quantity</th>
                     <th>Purpose</th>
-                    <th>Borrow Date</th>
                     <th>Request Date</th>
-                    <th>Return Date</th>
+                    <th>Borrow Date(From)</th>
+                    <th>Return Date (To)</th>
                     <th>Status</th>
                     <th>Action</th>
                   </tr>
@@ -239,9 +241,11 @@
                     <td>{{ b.item }}</td>
                     <td>{{ b.quantity }}</td>
                     <td>{{ b.purpose }}</td>
-                    <td>{{ b.borrow_date.strftime('%Y-%m-%d') if b.borrow_date else 'N/A' }}</td>
                     <td>{{ b.request_date.strftime('%Y-%m-%d %I:%M %p') }}</td>
-                    <td>{{ b.return_date.strftime('%Y-%m-%d %I:%M %p') }}</td>
+                    <td>
+                      {{ b.borrow_date.strftime('%Y-%m-%d') if b.borrow_date else 'N/A' }} -
+                      {{ b.return_date.strftime('%Y-%m-%d %I:%M %p') }}
+                    </td>
                     <td>
                       {% if b.status == 'Return Requested' %}
                       <span class="badge bg-info text-dark">{{ b.status }}</span>
@@ -261,6 +265,7 @@
                   </tr>
                   {% endfor %}
                 </tbody>
+
               </table>
             </div>
           </div>
