@@ -77,9 +77,8 @@
     <main class="col-md-10 ms-sm-auto px-4 mt-4">
       <h1 class="fw-bold mb-4 print-hide">History</h1>
 
-      <!-- Filters and Type Buttons -->
+      <!-- Filters -->
       <div class="screen-only d-flex flex-wrap justify-content-between align-items-center mb-3">
-        <!-- Left: Search, Date, Status Filters -->
         <div class="d-flex gap-2 flex-wrap">
           <div class="input-group" style="width: 250px;">
             <span class="input-group-text bg-white border-end-0"><i class="bi bi-search text-muted"></i></span>
@@ -118,7 +117,6 @@
       <div class="tab-content" id="historyTabsContent">
         <!-- Borrowings & Reservations Tab -->
         <div class="tab-pane fade show active" id="logs" role="tabpanel">
-          <!-- Type Filter Buttons -->
           <div class="mb-3">
             <div class="btn-group">
               <button class="btn btn-sm text-white" style="background-color: #a10b0b;" onclick="filterByType('Borrowing')">
@@ -131,7 +129,6 @@
                 <i class="bi bi-list-ul me-1"></i> Show All
               </button>
             </div>
-            <!-- Export / Print Buttons -->
             <div class="d-flex justify-content-end mt-2 screen-only">
               <div class="btn-group">
                 <button class="btn btn-sm text-white" style="background-color: #b30000;" onclick="exportFilteredToPDF()">
@@ -143,7 +140,8 @@
               </div>
             </div>
           </div>
-          <!-- Table -->
+
+          <!-- Borrowing/Reservation Table -->
           <div class="card shadow-sm mb-4" data-aos="fade-up">
             <div class="card-body">
               <div class="table-responsive" id="exportSection">
@@ -204,7 +202,6 @@
         <div class="tab-pane fade" id="restrictions" role="tabpanel">
           <div class="card shadow-sm mb-4" data-aos="fade-up">
             <div class="card-body">
-              <!-- Export / Print Buttons -->
               <div class="d-flex justify-content-end mb-2 screen-only">
                 <div class="btn-group">
                   <button class="btn btn-sm text-white" style="background-color: #b30000;" onclick="exportRestrictionsToPDF()">
@@ -216,8 +213,9 @@
                 </div>
               </div>
 
-               <!-- Summary Table -->
-                <h5 class="mt-4">Restriction Summary</h5>
+              <!-- Summary Table -->
+              <h5 class="mt-4">Restriction Summary</h5>
+              <div id="restrictionSummaryContainer">
                 <div class="card shadow-sm mb-4" data-aos="fade-up">
                   <div class="card-body">
                     <div class="table-responsive w-100">
@@ -242,8 +240,7 @@
                 </div>
               </div>
 
-              
-              <!-- Table -->
+              <!-- Restrictions Table -->
               <div class="table-responsive w-100">
                 <table id="restrictionsTable" class="table table-bordered table-hover align-middle mb-0">
                   <thead class="table-light">
@@ -273,8 +270,8 @@
               </div>
             </div>
           </div>
+        </div>
 
-         
       </div>
     </main>
   </div>
@@ -285,8 +282,7 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
 <script src="https://unpkg.com/aos@2.3.1/dist/aos.js"></script>
 <script>
-  
-  AOS.init();
+AOS.init();
 let currentTypeFilter = '';
 
 function getFilterInfo() {
@@ -296,7 +292,7 @@ function getFilterInfo() {
   return { search, date, status, type: currentTypeFilter };
 }
 
-// Unified filter function
+// Apply filters to both tables
 function applyFilters(tableId) {
   const { search, date, status, type } = getFilterInfo();
   const table = document.getElementById(tableId);
@@ -305,11 +301,10 @@ function applyFilters(tableId) {
 
   rows.forEach(row => {
     if (row.id && row.id.startsWith('no')) return;
-
     const cells = row.querySelectorAll('td');
     let rowText = row.textContent.toLowerCase();
-    let rowDate = cells[5]?.textContent.trim().split(' ')[0] || '';
-    let rowStatus = cells[7]?.textContent.trim() || '';
+    let rowDate = cells[cells.length - 1]?.textContent.trim().split(' ')[0] || '';
+    let rowStatus = cells[3]?.textContent.trim() || '';
     let rowType = cells[0]?.textContent.trim() || '';
 
     const matchesSearch = !search || rowText.includes(search);
@@ -325,9 +320,16 @@ function applyFilters(tableId) {
 
   const noRow = table.querySelector('tbody tr[id^="no"]');
   if (noRow) noRow.style.display = visibleCount === 0 ? '' : 'none';
+
+  // Hide/show restriction summary if filters are active
+  if (tableId === 'restrictionsTable') {
+    const summary = document.getElementById('restrictionSummaryContainer');
+    const filtersActive = search || date || status;
+    summary.style.display = filtersActive ? 'none' : 'block';
+  }
 }
 
-// Type filter
+// Type filter for borrow/reservation
 function filterByType(type) {
   currentTypeFilter = type;
   applyFilters('historyTable');
@@ -346,11 +348,17 @@ function filterByType(type) {
   }
 }
 
-// Event listeners
+// Apply filters to both tables on change
 ['searchInput','dateFilter','statusFilter'].forEach(id => {
   const el = document.getElementById(id);
-  if(el) el.addEventListener(id==='searchInput'?'input':'change', () => applyFilters('historyTable'));
+  if(el) el.addEventListener(id==='searchInput'?'input':'change', () => {
+    applyFilters('historyTable');
+    applyFilters('restrictionsTable');
+  });
 });
+
+applyFilters('historyTable');
+applyFilters('restrictionsTable');
 
 // Initialize restrictions visibility
 function updateRestrictionsVisibility() {
