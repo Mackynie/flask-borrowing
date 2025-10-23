@@ -243,12 +243,13 @@ setTimeout(() => {
 }, 4000);
 
 // ✅ Column filter logic
-function applyColumnFilter(tableClone) {
-  const filter = document.getElementById('columnFilter').value;
+function applyColumnFilter(tableClone, selectedFilter) {
   const headers = Array.from(tableClone.querySelectorAll('thead th')).map(th => th.innerText.trim());
+
   const indexTotal = headers.indexOf('Total Quantity');
-  const indexAvailable = headers.indexOf('Available Assets');
+  const indexAvailable = headers.indexOf('Available Quantity');
   const indexBorrowed = headers.indexOf('Active Borrowed');
+  const indexActions = headers.indexOf('Actions');
 
   const removeColumn = (index) => {
     if (index === -1) return;
@@ -258,59 +259,75 @@ function applyColumnFilter(tableClone) {
     });
   };
 
-  if (filter === 'hideBorrowedAvailable') {
+  // ✅ Apply filter rules
+  if (selectedFilter === 'hideBorrowedAvailable') {
+    // "Total Quantity Only"
     removeColumn(indexBorrowed);
     removeColumn(indexAvailable);
-  } else if (filter === 'hideTotalAvailable') {
+    removeColumn(indexActions);
+  } else if (selectedFilter === 'hideTotalAvailable') {
+    // "Active Borrowed Only"
     removeColumn(indexTotal);
     removeColumn(indexAvailable);
-  } else if (filter === 'hideTotalBorrowed') {
+    removeColumn(indexActions);
+  } else if (selectedFilter === 'hideTotalBorrowed') {
+    // "Available Quantity Only"
     removeColumn(indexTotal);
     removeColumn(indexBorrowed);
+    removeColumn(indexActions);
+  } else {
+    // "All Columns" – just remove actions column
+    removeColumn(indexActions);
   }
-}
-
-// ✅ Shared header/footer
-function buildExportHeader() {
-  return `
-    <div style="text-align:center; margin-bottom:10px;">
-      <img src="{{ url_for('static', filename='img/logo3.png') }}" style="height:60px; float:right;">
-      <img src="{{ url_for('static', filename='img/POB5.jpg') }}" style="height:50px; float:left;">
-      <div style="font-weight:bold; font-size:16px;">POBLACION 5</div>
-      <div style="font-size:12px;">Poblacion 5, Midsayap, Cotabato</div>
-      <div style="font-size:11px; margin-bottom:5px;">BARMA ASSETS REPORT</div>
-      <hr style="border:1px solid #000; margin:5px 0;">
-    </div>
-  `;
-}
-function buildExportFooter() {
-  return `
-    <div style="font-size:12px; margin-top:8px; display:flex; justify-content:space-between;">
-      <span>Print date: ${new Date().toLocaleDateString()}</span>
-      <span>Printed by: ${adminName}</span>
-    </div>
-  `;
 }
 
 // ✅ Print Report
 async function printReport() {
+  const selectedFilter = document.getElementById('columnFilter').value;
+  const filterTextMap = {
+    'all': 'All Columns',
+    'hideBorrowedAvailable': 'Total Quantity Only',
+    'hideTotalAvailable': 'Active Borrowed Only',
+    'hideTotalBorrowed': 'Available Quantity Only'
+  };
+  const filterText = filterTextMap[selectedFilter] || 'All Columns';
+
   const headerHTML = buildExportHeader();
   const footerHTML = buildExportFooter();
   const tableClone = document.getElementById('assetsTable').cloneNode(true);
 
+  // Remove the "Actions" column
   tableClone.querySelectorAll('thead th:last-child, tbody td:last-child').forEach(el => el.remove());
-  applyColumnFilter(tableClone);
+  applyColumnFilter(tableClone, selectedFilter);
+
+  // ✅ Add a line showing which filter is used
+  const filterLabel = `
+    <div style="font-size:12px; margin-bottom:5px; text-align:center;">
+      <strong>Filter Used:</strong> ${filterText}
+    </div>
+  `;
 
   const style = `
     <style>
       body { font-family: Arial, sans-serif; padding: 20px; color: #000; }
       table { border-collapse: collapse; width: 100%; }
       th, td { border: 0.5px solid black; padding: 4px; font-size: 12px; text-align: center; }
-      th { font-weight: bold; }
+      th { font-weight: bold; background-color: #f2f2f2; }
     </style>
   `;
+
   const win = window.open('', '', 'width=900,height=650');
-  win.document.write(`<html><head><title>Assets Report</title>${style}</head><body>${headerHTML}${tableClone.outerHTML}${footerHTML}</body></html>`);
+  win.document.write(`
+    <html>
+      <head><title>Assets Report</title>${style}</head>
+      <body>
+        ${headerHTML}
+        ${filterLabel}
+        ${tableClone.outerHTML}
+        ${footerHTML}
+      </body>
+    </html>
+  `);
   win.document.close();
   win.onload = () => { win.focus(); win.print(); };
 }
