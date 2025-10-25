@@ -246,9 +246,12 @@ setTimeout(() => {
 function applyColumnFilter(tableClone, selectedFilter) {
   const headers = Array.from(tableClone.querySelectorAll('thead th')).map(th => th.innerText.trim());
 
+  const indexID = headers.indexOf('ID');
+  const indexName = headers.indexOf('Asset Name');
   const indexTotal = headers.indexOf('Total Quantity');
   const indexAvailable = headers.indexOf('Available Quantity');
   const indexBorrowed = headers.indexOf('Active Borrowed');
+  const indexClass = headers.indexOf('Classification');
   const indexActions = headers.indexOf('Actions');
 
   const removeColumn = (index) => {
@@ -259,27 +262,27 @@ function applyColumnFilter(tableClone, selectedFilter) {
     });
   };
 
-  // ✅ Apply filter rules
-  if (selectedFilter === 'hideBorrowedAvailable') {
-    // "Total Quantity Only"
-    removeColumn(indexBorrowed);
+  // Start by removing the ID and Actions columns (always excluded in print)
+  removeColumn(indexActions);
+  removeColumn(indexID);
+
+  // ✅ Custom filter behavior:
+  if (selectedFilter === 'hideTotalAvailable') {
+    // "Active Borrowed Only" → show: Asset Name, Total Quantity, Active Borrowed, Classification
     removeColumn(indexAvailable);
-    removeColumn(indexActions);
-  } else if (selectedFilter === 'hideTotalAvailable') {
-    // "Active Borrowed Only"
-    removeColumn(indexTotal);
-    removeColumn(indexAvailable);
-    removeColumn(indexActions);
-  } else if (selectedFilter === 'hideTotalBorrowed') {
-    // "Available Quantity Only"
-    removeColumn(indexTotal);
+  } 
+  else if (selectedFilter === 'hideTotalBorrowed') {
+    // "Available Quantity Only" → show: Asset Name, Total Quantity, Available Quantity, Classification
     removeColumn(indexBorrowed);
-    removeColumn(indexActions);
-  } else {
-    // "All Columns" – just remove actions column
-    removeColumn(indexActions);
-  }
+  } 
+  else if (selectedFilter === 'hideBorrowedAvailable') {
+    // "Total Quantity Only" → show: Asset Name, Total Quantity, Classification
+    removeColumn(indexAvailable);
+    removeColumn(indexBorrowed);
+  } 
+  // "All Columns" → show everything except ID & Actions
 }
+
 
 async function toBase64(url) {
   const response = await fetch(url, {cache: "no-store"});
