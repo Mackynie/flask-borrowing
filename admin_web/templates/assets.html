@@ -242,10 +242,10 @@ setTimeout(() => {
   document.querySelectorAll('.alert').forEach(alert => new bootstrap.Alert(alert).close());
 }, 4000);
 
-// ✅ Column filter logic
 function applyColumnFilter(tableClone, selectedFilter) {
   const headers = Array.from(tableClone.querySelectorAll('thead th')).map(th => th.innerText.trim());
 
+  // Get column indexes
   const indexID = headers.indexOf('ID');
   const indexName = headers.indexOf('Asset Name');
   const indexTotal = headers.indexOf('Total Quantity');
@@ -254,6 +254,7 @@ function applyColumnFilter(tableClone, selectedFilter) {
   const indexClass = headers.indexOf('Classification');
   const indexActions = headers.indexOf('Actions');
 
+  // Helper function to safely remove a column
   const removeColumn = (index) => {
     if (index === -1) return;
     tableClone.querySelectorAll('tr').forEach(tr => {
@@ -262,25 +263,29 @@ function applyColumnFilter(tableClone, selectedFilter) {
     });
   };
 
-  // Start by removing the ID and Actions columns (always excluded in print)
+  // Always remove these
   removeColumn(indexActions);
   removeColumn(indexID);
 
-  // ✅ Custom filter behavior:
-  if (selectedFilter === 'hideTotalAvailable') {
-    // "Active Borrowed Only" → show: Asset Name, Total Quantity, Active Borrowed, Classification
-    removeColumn(indexAvailable);
+  // ⚠️ Important: Remove columns from highest → lowest index to avoid index shift
+  const removeMultiple = (...cols) => {
+    cols.filter(i => i !== -1).sort((a, b) => b - a).forEach(removeColumn);
+  };
+
+  // ✅ Custom filter behavior (fixed):
+  if (selectedFilter === 'hideBorrowedAvailable') {
+    // "Total Quantity Only" → show: Asset Name, Total Quantity, Classification
+    removeMultiple(indexBorrowed, indexAvailable);
+  } 
+  else if (selectedFilter === 'hideTotalAvailable') {
+    // "Active Borrowed Only" → show: Asset Name, Active Borrowed, Classification
+    removeMultiple(indexAvailable, indexTotal);
   } 
   else if (selectedFilter === 'hideTotalBorrowed') {
-    // "Available Quantity Only" → show: Asset Name, Total Quantity, Available Quantity, Classification
-    removeColumn(indexBorrowed);
+    // "Available Quantity Only" → show: Asset Name, Available Quantity, Classification
+    removeMultiple(indexBorrowed, indexTotal);
   } 
-  else if (selectedFilter === 'hideBorrowedAvailable') {
-    // "Total Quantity Only" → show: Asset Name, Total Quantity, Classification
-    removeColumn(indexAvailable);
-    removeColumn(indexBorrowed);
-  } 
-  // "All Columns" → show everything except ID & Actions
+  // "All Columns" → keep all except ID & Actions
 }
 
 
