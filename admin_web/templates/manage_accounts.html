@@ -102,7 +102,7 @@
         <div class="card-body">
           <div class="d-flex justify-content-between mb-3">
             <div class="w-50">
-              <input type="text" id="searchInput" class="form-control" placeholder="Search resident name...">
+               id="searchInput" class="form-control" placeholder="Search resident name...">
             </div>
             <div class="btn-group">
               <button class="btn btn-sm text-white" style="background-color: #b30000;" onclick="exportResidentsToPDF()">
@@ -172,7 +172,7 @@
         <div class="modal-body">
           <div class="mb-3">
             <label class="form-label">Full Name</label>
-            <input type="text" class="form-control" name="full_name" value="{{ r.full_name }}" required>
+             class="form-control" name="full_name" value="{{ r.full_name }}" required>
           </div>
           <div class="mb-3">
             <label class="form-label">Username</label>
@@ -180,7 +180,15 @@
           </div>
           <div class="mb-3">
             <label class="form-label">Phone Number</label>
-            <input type="text" class="form-control" name="phone_number" value="{{ r.phone_number }}" required>
+            <input type="text" 
+             class="form-control" 
+             name="phone_number" 
+             value="{{ r.phone_number }}" 
+             maxlength="11"
+             pattern="\d{11}"
+             title="Please enter exactly 11 digits"
+             oninput="this.value = this.value.replace(/[^0-9]/g, '')"
+             required>
           </div>
           <div class="mb-3">
             <label class="form-label">Purok</label>
