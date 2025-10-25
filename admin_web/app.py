@@ -1578,17 +1578,22 @@ def update_account():
     if not user:
         return jsonify({'error': 'User not found'}), 404
 
+    # Validate phone number
+    phone_number = data.get('phone_number', '').strip()
+    if not phone_number.isdigit() or len(phone_number) != 11:
+        return jsonify({'error': 'Phone number must contain only digits and be exactly 11 digits long'}), 400
+
     # Check for unique constraints
     if Resident.query.filter(Resident.username == data['username'], Resident.id != user.id).first():
         return jsonify({'error': 'Username already exists'}), 400
-    if Resident.query.filter(Resident.phone_number == data['phone_number'], Resident.id != user.id).first():
+    if Resident.query.filter(Resident.phone_number == phone_number, Resident.id != user.id).first():
         return jsonify({'error': 'Phone number already exists'}), 400
 
     # Update fields
     user.username = data['username']
-    user.phone_number = data['phone_number']
+    user.phone_number = phone_number
     user.gender = data['gender']
-    user.purok = data.get('purok', user.purok)  # handle Purok update
+    user.purok = data.get('purok', user.purok)
 
     # Update password if provided
     if 'password' in data and data['password']:
@@ -1596,6 +1601,7 @@ def update_account():
 
     db.session.commit()
     return jsonify({'message': 'Account updated successfully'})
+
 
 
 @app.route('/api/history/<string:full_name>', methods=['GET'])
@@ -1906,20 +1912,32 @@ def edit_resident(id):
     old_phone_number = resident.phone_number
     old_purok = resident.purok
 
-    full_name = request.form.get('full_name').strip()
-    username = request.form.get('username').strip()
-    phone_number = request.form.get('phone_number').strip()
-    purok = request.form.get('purok').strip()
+    full_name = request.form.get('full_name', '').strip()
+    username = request.form.get('username', '').strip()
+    phone_number = request.form.get('phone_number', '').strip()
+    purok = request.form.get('purok', '').strip()
 
     # Basic validation
     if not full_name or not username or not phone_number or not purok:
         flash('All fields are required.', 'danger')
         return redirect(url_for('manage_accounts'))
 
-    # Optional: check if username is already used by another resident
-    existing_user = Resident.query.filter(Resident.username == username, Resident.id != id).first()
-    if existing_user:
+    # Phone number validation: digits only and exactly 11 digits
+    if not phone_number.isdigit() or len(phone_number) != 11:
+        flash('Phone number must contain only digits and be exactly 11 digits long.', 'danger')
+        return redirect(url_for('manage_accounts'))
+
+    # Unique checks
+    if Resident.query.filter(Resident.full_name == full_name, Resident.id != id).first():
+        flash('Full name already exists.', 'danger')
+        return redirect(url_for('manage_accounts'))
+
+    if Resident.query.filter(Resident.username == username, Resident.id != id).first():
         flash('Username already taken.', 'danger')
+        return redirect(url_for('manage_accounts'))
+
+    if Resident.query.filter(Resident.phone_number == phone_number, Resident.id != id).first():
+        flash('Phone number already in use.', 'danger')
         return redirect(url_for('manage_accounts'))
 
     # Update resident
@@ -1928,13 +1946,18 @@ def edit_resident(id):
     resident.phone_number = phone_number
     resident.purok = purok
 
-    # Log admin activity before commit
+    # Log admin activity
     new_activity = AdminActivity(
         admin_id=admin_id,
         action=f"Edited resident: {old_full_name} (Username: {old_username}, Phone: {old_phone_number}, Purok: {old_purok}) → "
                f"{full_name} (Username: {username}, Phone: {phone_number}, Purok: {purok})"
     )
     db.session.add(new_activity)
+
+    db.session.commit()
+    flash('Resident updated successfully.', 'success')
+    return redirect(url_for('manage_accounts'))
+
 
     try:
         db.session.commit()
