@@ -75,9 +75,6 @@
           <input type="text" id="searchInput" class="form-control border-start-0" placeholder="Search assets...">
         </div>
         <div class="btn-group">
-          <button class="btn btn-sm text-white" style="background-color: #b30000;" onclick="exportFilteredToPDF()">
-            <i class="bi bi-filetype-pdf me-1"></i> Export to PDF
-          </button>
           <button class="btn btn-sm text-dark" style="background-color: #FFC100;" onclick="printReport()">
             <i class="bi bi-printer me-1"></i> Print
           </button>
@@ -104,7 +101,6 @@
         <table class="table table-bordered table-hover align-middle" id="assetsTable">
           <thead class="table-light">
             <tr>
-              <th>ID</th>
               <th>Asset Name</th>
               <th>Total Quantity</th>
               <th>Available Quantity</th>
@@ -118,7 +114,6 @@
               {% set active_borrowed = borrowings | selectattr('asset_id', 'equalto', asset.id) | selectattr('status', 'equalto', 'Approved') | map(attribute='quantity') | sum %}
               {% set available_assets = asset.quantity - active_borrowed %}
               <tr class="export-visible">
-                <td>{{ asset.id }}</td>
                 <td>{{ asset.name }}</td>
                 <td>{{ asset.quantity }}</td>
                 <td>{{ available_assets if available_assets > 0 else 0 }}</td>
