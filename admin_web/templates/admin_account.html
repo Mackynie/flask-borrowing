@@ -205,7 +205,7 @@
                 {% for activity in activities %}
                   <tr class="export-visible">
                     <td>{{ activity.action or 'N/A' }}</td>
-                    <td>{{ activity.timestamp.strftime('%Y-%m-%d %H:%M:%S') }}</td>
+                    <td>{{ activity.timestamp.strftime('%Y-%m-%d %I:%M:%S %p') }}</td>
                   </tr>
                 {% endfor %}
                 <tr id="noActivityRow" style="display:none;">
