@@ -240,7 +240,6 @@ setTimeout(() => {
 function applyColumnFilter(tableClone, selectedFilter) {
   const headers = Array.from(tableClone.querySelectorAll('thead th')).map(th => th.innerText.trim());
 
-  const indexName = headers.indexOf('Asset Name');
   const indexTotal = headers.indexOf('Total Quantity');
   const indexAvailable = headers.indexOf('Available Quantity');
   const indexBorrowed = headers.indexOf('Active Borrowed');
@@ -248,7 +247,6 @@ function applyColumnFilter(tableClone, selectedFilter) {
   const indexActions = headers.indexOf('Actions');
   const indexID = headers.indexOf('ID');
 
-  // Helper to remove a column by index (safe)
   const removeColumn = (index) => {
     if (index === -1) return;
     tableClone.querySelectorAll('tr').forEach(tr => {
@@ -261,28 +259,28 @@ function applyColumnFilter(tableClone, selectedFilter) {
   removeColumn(indexActions);
   removeColumn(indexID);
 
-  // Remove columns (highest index first to avoid shifting)
   const removeMultiple = (...cols) => {
     cols.filter(i => i !== -1).sort((a, b) => b - a).forEach(removeColumn);
   };
 
-  // ✅ Apply correct filters:
+  // ✅ Updated filter logic
   if (selectedFilter === 'hideBorrowedAvailable') {
-    // ➤ Show: Asset Name, Total Quantity, Classification
+    // ➤ Show: Total Quantity only
     removeMultiple(indexBorrowed, indexAvailable);
   } 
   else if (selectedFilter === 'hideTotalAvailable') {
-    // ➤ Show: Asset Name, Active Borrowed, Classification
-    removeMultiple(indexAvailable, indexTotal);
+    // ➤ Show: Total Quantity + Active Borrowed
+    removeMultiple(indexAvailable);
   } 
   else if (selectedFilter === 'hideTotalBorrowed') {
-    // ➤ Show: Asset Name, Available Quantity, Classification
-    removeMultiple(indexBorrowed, indexTotal);
+    // ➤ Show: Total Quantity + Available Quantity
+    removeMultiple(indexBorrowed);
   } 
   else if (selectedFilter === 'all') {
     // ➤ Show all except Actions & ID (already removed)
   }
 }
+
 
 
 
