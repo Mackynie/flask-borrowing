@@ -240,16 +240,15 @@ setTimeout(() => {
 function applyColumnFilter(tableClone, selectedFilter) {
   const headers = Array.from(tableClone.querySelectorAll('thead th')).map(th => th.innerText.trim());
 
-  // Get column indexes
-  const indexID = headers.indexOf('ID');
   const indexName = headers.indexOf('Asset Name');
   const indexTotal = headers.indexOf('Total Quantity');
   const indexAvailable = headers.indexOf('Available Quantity');
   const indexBorrowed = headers.indexOf('Active Borrowed');
   const indexClass = headers.indexOf('Classification');
   const indexActions = headers.indexOf('Actions');
+  const indexID = headers.indexOf('ID');
 
-  // Helper function to safely remove a column
+  // Helper to remove a column by index (safe)
   const removeColumn = (index) => {
     if (index === -1) return;
     tableClone.querySelectorAll('tr').forEach(tr => {
@@ -258,30 +257,33 @@ function applyColumnFilter(tableClone, selectedFilter) {
     });
   };
 
-  // Always remove these
+  // Always remove "Actions" and "ID" columns
   removeColumn(indexActions);
   removeColumn(indexID);
 
-  // ⚠️ Important: Remove columns from highest → lowest index to avoid index shift
+  // Remove columns (highest index first to avoid shifting)
   const removeMultiple = (...cols) => {
     cols.filter(i => i !== -1).sort((a, b) => b - a).forEach(removeColumn);
   };
 
-  // ✅ Custom filter behavior (fixed):
+  // ✅ Apply correct filters:
   if (selectedFilter === 'hideBorrowedAvailable') {
-    // "Total Quantity Only" → show: Asset Name, Total Quantity, Classification
+    // ➤ Show: Asset Name, Total Quantity, Classification
     removeMultiple(indexBorrowed, indexAvailable);
   } 
   else if (selectedFilter === 'hideTotalAvailable') {
-    // "Active Borrowed Only" → show: Asset Name, Active Borrowed, Classification
+    // ➤ Show: Asset Name, Active Borrowed, Classification
     removeMultiple(indexAvailable, indexTotal);
   } 
   else if (selectedFilter === 'hideTotalBorrowed') {
-    // "Available Quantity Only" → show: Asset Name, Available Quantity, Classification
+    // ➤ Show: Asset Name, Available Quantity, Classification
     removeMultiple(indexBorrowed, indexTotal);
   } 
-  // "All Columns" → keep all except ID & Actions
+  else if (selectedFilter === 'all') {
+    // ➤ Show all except Actions & ID (already removed)
+  }
 }
+
 
 
 async function toBase64(url) {
