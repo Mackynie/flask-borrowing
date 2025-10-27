@@ -105,9 +105,6 @@
                 <input id="searchInput" class="form-control" placeholder="Search resident name...">
             </div>
             <div class="btn-group">
-              <button class="btn btn-sm text-white" style="background-color: #b30000;" onclick="exportResidentsToPDF()">
-                <i class="bi bi-filetype-pdf me-1"></i> Export to PDF
-              </button>
               <button class="btn btn-sm text-dark" style="background-color: #FFC100;" onclick="printResidentsReport()">
                 <i class="bi bi-printer me-1"></i> Print
               </button>
@@ -172,7 +169,7 @@
         <div class="modal-body">
           <div class="mb-3">
             <label class="form-label">Full Name</label>
-             class="form-control" name="full_name" value="{{ r.full_name }}" required>
+             <input class="form-control" name="full_name" value="{{ r.full_name }}" required>
           </div>
           <div class="mb-3">
             <label class="form-label">Username</label>
@@ -255,6 +252,13 @@ function printResidentsReport() {
 
   // Remove Actions column
   tableClone.querySelectorAll('thead th:last-child, tbody td:last-child').forEach(el => el.remove());
+
+  const reportTitle = `
+    <h2 style="text-align:center; font-weight:700; margin:10px 0 5px 0; font-family:Arial;">
+     RESIDENTS REPORT
+    </h2>
+  `;
+
 
   const style = `
     <style>
