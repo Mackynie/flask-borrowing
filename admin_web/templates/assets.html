@@ -82,9 +82,9 @@
           <!-- ✅ Column Filter Dropdown -->
           <select id="columnFilter" class="form-select form-select-sm ms-2" style="width:auto;">
             <option value="all">All Columns</option>
-            <option value="hideBorrowedAvailable">Total Quantity Only (Hide Active Borrowed & Available)</option>
-            <option value="hideTotalAvailable">Active Borrowed Only (Hide Total Quantity & Available)</option>
-            <option value="hideTotalBorrowed">Available Quantity (Hide Total Quantity & Borrowed)</option>
+            <option value="hideBorrowedAvailable">Total Quantity List</option>
+            <option value="hideTotalAvailable">Active Borrowed List</option>
+            <option value="hideTotalBorrowed">Available Quantity List</option>
           </select>
         </div>
       </div>
@@ -330,9 +330,9 @@ async function printReport() {
   const selectedFilter = document.getElementById('columnFilter').value;
   const filterTextMap = {
     'all': 'All Columns',
-    'hideBorrowedAvailable': 'Total Quantity Only',
-    'hideTotalAvailable': 'Active Borrowed Only',
-    'hideTotalBorrowed': 'Available Quantity Only'
+    'hideBorrowedAvailable': 'Total Quantity List',
+    'hideTotalAvailable': 'Active Borrowed List ',
+    'hideTotalBorrowed': 'Available Quantity List'
   };
   const filterText = filterTextMap[selectedFilter] || 'All Columns';
 
@@ -348,6 +348,13 @@ async function printReport() {
     <div style="font-size:12px; margin-bottom:5px; text-align:center;">
       <strong>Filter Used:</strong> ${filterText}
     </div>
+  `;
+
+  // ✅ Add this report title
+  const reportTitle = `
+    <h2 style="text-align:center; font-weight:700; margin:10px 0 5px 0; font-family:Arial;">
+      ASSETS REPORT
+    </h2>
   `;
 
   const style = `
