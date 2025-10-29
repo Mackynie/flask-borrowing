@@ -1438,12 +1438,16 @@ def request_reset_otp():
 
 @app.route('/api/verify_reset_otp', methods=['POST'])
 def verify_reset_otp():
-    data = request.get_json()
-    if not data or 'username' not in data or 'otp' not in data:
-        return jsonify({"error": "Invalid request"}), 400
+    if request.is_json:
+        data = request.get_json()
+        username = data.get('username', '').strip()
+        otp = data.get('otp', '').strip()
+    else:
+        username = request.form.get('username', '').strip()
+        otp = request.form.get('otp', '').strip()
 
-    username = data['username'].strip()
-    otp = data['otp'].strip()
+    if not username or not otp:
+        return jsonify({"error": "Invalid request"}), 400
 
     if username not in otp_store:
         return jsonify({"error": "No OTP request found"}), 400
@@ -1456,7 +1460,6 @@ def verify_reset_otp():
     if stored['otp'] != otp:
         return jsonify({"error": "Invalid OTP"}), 400
 
-    # ✅ Mark verified, allow password reset
     otp_store[username]['verified'] = True
     return jsonify({"message": "OTP verified"}), 200
 
