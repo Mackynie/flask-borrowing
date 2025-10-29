@@ -153,6 +153,7 @@
                       <th>Purpose</th>
                       <th id="dateFromHeader">Borrow Date</th>
                       <th id="dateToHeader">Return Date</th>
+                      <th>Action Date</th>
                       <th>Status</th>
                       <th>Reason</th>
                     </tr>
@@ -172,6 +173,7 @@
                         <td>{{ h.borrow_date.strftime('%Y-%m-%d') if h.borrow_date else 'N/A' }}</td>
                         <td>{{ h.return_date.strftime('%Y-%m-%d') if h.return_date else 'N/A' }}</td>
                       {% endif %}
+                      <td>{{ h.action_date.strftime('%Y-%m-%d %I:%M %p') if h.action_date else 'N/A' }}</td>
                       <td>
                         {% if h.action_type == 'Approved' %}
                           <span class="badge badge-approved">Approved</span>
@@ -288,7 +290,6 @@ function getFilterInfo() {
   return { search, date, status, type: currentTypeFilter };
 }
 
-// Apply filters to both tables
 function applyFilters(tableId) {
   const { search, date, status, type } = getFilterInfo();
   const table = document.getElementById(tableId);
@@ -297,11 +298,24 @@ function applyFilters(tableId) {
 
   rows.forEach(row => {
     if (row.id && row.id.startsWith('no')) return;
+
     const cells = row.querySelectorAll('td');
+
     let rowText = row.textContent.toLowerCase();
-    let rowDate = cells[cells.length - 1]?.textContent.trim().split(' ')[0] || '';
-    let rowStatus = cells[3]?.textContent.trim() || '';
-    let rowType = cells[0]?.textContent.trim() || '';
+
+    // Determine which column to check based on table
+    let rowDate = '';
+    let rowStatus = '';
+    let rowType = '';
+
+    if (tableId === 'historyTable') {
+      rowType = cells[0]?.textContent.trim() || '';
+      rowStatus = cells[8]?.textContent.trim() || '';       // Status column
+      rowDate = cells[7]?.textContent.trim().split(' ')[0] || ''; // Action Date column
+    } else if (tableId === 'restrictionsTable') {
+      rowStatus = cells[3]?.textContent.trim() || '';       // Action column
+      rowDate = cells[4]?.textContent.trim() || '';         // Date column
+    }
 
     const matchesSearch = !search || rowText.includes(search);
     const matchesDate = !date || rowDate === date;
@@ -311,6 +325,7 @@ function applyFilters(tableId) {
     const visible = matchesSearch && matchesDate && matchesStatus && matchesType;
     row.style.display = visible ? '' : 'none';
     row.classList.toggle('export-visible', visible);
+
     if (visible) visibleCount++;
   });
 
