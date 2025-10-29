@@ -122,7 +122,7 @@
           <div class="profile-avatar"><i class="bi bi-person-fill"></i></div>
           <h4 class="text-center mb-2">{{ admin.full_name }}</h4>
           <p class="text-center text-secondary"><strong>Username:</strong> {{ admin.username }}</p>
-          <p class="text-center text-secondary"><strong>Phone:</strong> {{ admin.phone_number or 'N/A' }}</p> <!-- ✅ Added phone display -->
+          <p class="text-center text-secondary"><strong>Phone:</strong> {{ admin.phone_number or 'N/A' }}</p>
 
           <!-- Update Button -->
           <div class="text-center mt-3">
@@ -144,7 +144,7 @@
                   <input type="text" class="form-control" name="username" value="{{ admin.username }}" required>
                 </div>
                 <div class="mb-3">
-                  <label class="form-label">Phone Number</label> <!-- ✅ Added phone number input -->
+                  <label class="form-label">Phone Number</label>
                   <input type="text"
                    class="form-control"
                    name="phone_number"
@@ -214,6 +214,12 @@
               </tbody>
             </table>
           </div>
+
+          <!-- Show All Button -->
+          <div class="text-center mt-2">
+            <button id="toggleActivityRows" class="btn btn-sm btn-outline-dark">Show All</button>
+          </div>
+
         </div>
       </main>
     </div>
@@ -226,6 +232,8 @@
     AOS.init();
 
     const adminName = "{{ admin.full_name }}";
+    let showAllActivity = false;
+    const MAX_ACTIVITY_ROWS = 5;
 
     async function toBase64(url) {
       const res = await fetch(url, {cache: "no-store"});
@@ -275,6 +283,15 @@
       `;
     }
 
+    function updateActivityVisibility() {
+      const rows = document.querySelectorAll('#activityTbody tr.export-visible');
+      rows.forEach((row, index) => {
+        if (row.id && row.id.startsWith('no')) return;
+        row.style.display = (!showAllActivity && index >= MAX_ACTIVITY_ROWS) ? 'none' : '';
+      });
+      document.getElementById('toggleActivityRows').textContent = showAllActivity ? 'Show Less' : 'Show All';
+    }
+
     function filterActivityLog() {
       const search = document.getElementById('activitySearch').value.toLowerCase();
       const date = document.getElementById('activityDate').value;
@@ -287,16 +304,24 @@
         const actionText = cells[0].textContent.toLowerCase();
         const rowDate = cells[1].textContent.split(' ')[0];
         const visible = (!search || actionText.includes(search)) && (!date || rowDate === date);
-        row.style.display = visible ? '' : 'none';
         row.classList.toggle('export-visible', visible);
         if (visible) visibleCount++;
       });
 
       document.getElementById('noActivityRow').style.display = visibleCount === 0 ? '' : 'none';
+      updateActivityVisibility();
     }
 
     document.getElementById('activitySearch').addEventListener('input', filterActivityLog);
     document.getElementById('activityDate').addEventListener('change', filterActivityLog);
+
+    document.getElementById('toggleActivityRows').addEventListener('click', () => {
+      showAllActivity = !showAllActivity;
+      updateActivityVisibility();
+    });
+
+    // Initialize after page load
+    updateActivityVisibility();
 
     async function exportActivityToPDF() {
       const rows = document.querySelectorAll('#activityTable tbody tr.export-visible');
@@ -359,3 +384,4 @@
   </script>
 </body>
 </html>
+
