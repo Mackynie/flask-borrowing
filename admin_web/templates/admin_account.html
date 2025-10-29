@@ -289,7 +289,14 @@
         if (row.id && row.id.startsWith('no')) return;
         row.style.display = (!showAllActivity && index >= MAX_ACTIVITY_ROWS) ? 'none' : '';
       });
-      document.getElementById('toggleActivityRows').textContent = showAllActivity ? 'Show Less' : 'Show All';
+
+      const toggleBtn = document.getElementById('toggleActivityRows');
+      if (rows.length <= MAX_ACTIVITY_ROWS) {
+        toggleBtn.style.display = 'none';
+      } else {
+        toggleBtn.style.display = '';
+        toggleBtn.textContent = showAllActivity ? 'Show Less' : 'Show All';
+      }
     }
 
     function filterActivityLog() {
@@ -309,6 +316,7 @@
       });
 
       document.getElementById('noActivityRow').style.display = visibleCount === 0 ? '' : 'none';
+      showAllActivity = false; // reset toggle when filtering
       updateActivityVisibility();
     }
 
@@ -321,7 +329,10 @@
     });
 
     // Initialize after page load
-    updateActivityVisibility();
+    window.addEventListener('DOMContentLoaded', () => {
+      filterActivityLog(); // apply initial filtering
+      updateActivityVisibility(); // hide extra rows
+    });
 
     async function exportActivityToPDF() {
       const rows = document.querySelectorAll('#activityTable tbody tr.export-visible');
@@ -384,4 +395,3 @@
   </script>
 </body>
 </html>
-
