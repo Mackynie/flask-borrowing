@@ -175,7 +175,7 @@
       {% if error %}
         <div class="alert alert-danger text-center">{{ error }}</div>
       {% endif %}
-      <form method="POST" action="{{ url_for('verify_reset_otp') }}">
+      <form method="POST" action="{{ url_for('admin_verify_otp', username=username) }}">
         <div class="mb-3">
           <label class="form-label">Enter OTP</label>
           <input type="text" name="otp" class="form-control" placeholder="Enter OTP code" required>
