@@ -1991,7 +1991,7 @@ def admin_account():
         return redirect(url_for('login'))
 
     if request.method == 'POST':
-        # Get old values before overwriting
+        # Store old values BEFORE overwriting
         old_full_name = admin.full_name
         old_username = admin.username
         old_phone = admin.phone_number
@@ -2004,7 +2004,7 @@ def admin_account():
         phone_number = request.form.get('phone_number', '').strip()
         password = request.form.get('password', '').strip()
 
-        # Detect changes
+        # Detect actual changes
         changes = []
         if old_full_name != full_name:
             changes.append(f"Full Name changed from '{old_full_name}' → '{full_name}'")
@@ -2018,6 +2018,8 @@ def admin_account():
         if old_position != position:
             changes.append(f"Position changed from '{old_position}' → '{position}'")
             admin.position = position
+
+        # ✅ Only handle password if user actually entered one
         if password:
             pattern = r'^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$'
             if not re.match(pattern, password):
@@ -2026,6 +2028,7 @@ def admin_account():
             admin.password_hash = generate_password_hash(password)
             changes.append("Password changed")
 
+        # No changes detected
         if not changes:
             flash("No changes detected.", "info")
             return redirect(url_for('admin_account'))
@@ -2033,7 +2036,7 @@ def admin_account():
         try:
             db.session.commit()
 
-            # Log activity
+            # Log only what changed
             new_activity = AdminActivity(
                 admin_id=admin.id,
                 action="; ".join(changes)
@@ -2041,14 +2044,14 @@ def admin_account():
             db.session.add(new_activity)
             db.session.commit()
 
-            flash('Account updated successfully!', 'success')
+            flash("Account updated successfully!", "success")
         except Exception as e:
             db.session.rollback()
-            flash('Error updating account: ' + str(e), 'danger')
+            flash("Error updating account: " + str(e), "danger")
 
         return redirect(url_for('admin_account'))
 
-    # Fetch activities (most recent first)
+    # Display page + activities
     activities = AdminActivity.query.filter_by(admin_id=admin.id).order_by(AdminActivity.timestamp.desc()).all()
     return render_template('admin_account.html', admin=admin, activities=activities)
 
