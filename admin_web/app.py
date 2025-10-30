@@ -2007,20 +2007,20 @@ def admin_account():
         # Detect actual changes
         changes = []
         if old_full_name != full_name:
-            changes.append(f"Full Name changed from '{old_full_name}' → '{full_name}'")
             admin.full_name = full_name
+            changes.append(f"Full Name changed from '{old_full_name}' → '{full_name}'")
         if old_username != username:
-            changes.append(f"Username changed from '{old_username}' → '{username}'")
             admin.username = username
+            changes.append(f"Username changed from '{old_username}' → '{username}'")
         if old_phone != phone_number:
-            changes.append(f"Phone changed from '{old_phone}' → '{phone_number}'")
             admin.phone_number = phone_number
+            changes.append(f"Phone changed from '{old_phone}' → '{phone_number}'")
         if old_position != position:
-            changes.append(f"Position changed from '{old_position}' → '{position}'")
             admin.position = position
+            changes.append(f"Position changed from '{old_position}' → '{position}'")
 
-        # ✅ Only handle password if user actually entered one
-        if password:
+        # ✅ Only if a password was actually typed
+        if password and password.strip():
             pattern = r'^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$'
             if not re.match(pattern, password):
                 flash("Password must be at least 8 characters long and include uppercase, lowercase, number, and special character.", "danger")
@@ -2028,15 +2028,16 @@ def admin_account():
             admin.password_hash = generate_password_hash(password)
             changes.append("Password changed")
 
-        # No changes detected
+        # ✅ No changes at all
         if not changes:
             flash("No changes detected.", "info")
             return redirect(url_for('admin_account'))
 
         try:
+            # Commit updated fields
             db.session.commit()
 
-            # Log only what changed
+            # Log only what actually changed
             new_activity = AdminActivity(
                 admin_id=admin.id,
                 action="; ".join(changes)
@@ -2054,6 +2055,7 @@ def admin_account():
     # Display page + activities
     activities = AdminActivity.query.filter_by(admin_id=admin.id).order_by(AdminActivity.timestamp.desc()).all()
     return render_template('admin_account.html', admin=admin, activities=activities)
+
 
 
 @app.route('/admin/forgot_password', methods=['GET', 'POST'])
