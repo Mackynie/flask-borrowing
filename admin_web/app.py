@@ -1919,12 +1919,10 @@ def edit_resident(id):
     phone_number = request.form.get('phone_number', '').strip()
     purok = request.form.get('purok', '').strip()
 
-    # Basic validation
-    if not full_name or not username or not phone_number or not purok:
+    # Validation
+    if not all([full_name, username, phone_number, purok]):
         flash('All fields are required.', 'danger')
         return redirect(url_for('manage_accounts'))
-
-    # Phone number validation: digits only and exactly 11 digits
     if not phone_number.isdigit() or len(phone_number) != 11:
         flash('Phone number must contain only digits and be exactly 11 digits long.', 'danger')
         return redirect(url_for('manage_accounts'))
@@ -1933,53 +1931,51 @@ def edit_resident(id):
     if Resident.query.filter(Resident.full_name == full_name, Resident.id != id).first():
         flash('Full name already exists.', 'danger')
         return redirect(url_for('manage_accounts'))
-
     if Resident.query.filter(Resident.username == username, Resident.id != id).first():
         flash('Username already taken.', 'danger')
         return redirect(url_for('manage_accounts'))
-
     if Resident.query.filter(Resident.phone_number == phone_number, Resident.id != id).first():
         flash('Phone number already in use.', 'danger')
         return redirect(url_for('manage_accounts'))
 
-    # Update resident
-    resident.full_name = full_name
-    resident.username = username
-    resident.phone_number = phone_number
-    resident.purok = purok
-
-    # Detect changes
+    # Detect changes first
     changes = []
     if old_full_name != full_name:
         changes.append(f"Full Name: '{old_full_name}' → '{full_name}'")
+        resident.full_name = full_name
     if old_username != username:
         changes.append(f"Username: '{old_username}' → '{username}'")
+        resident.username = username
     if old_phone_number != phone_number:
         changes.append(f"Phone: '{old_phone_number}' → '{phone_number}'")
+        resident.phone_number = phone_number
     if old_purok != purok:
         changes.append(f"Purok: '{old_purok}' → '{purok}'")
-    
-    if changes:
+        resident.purok = purok
+
+    if not changes:
+        flash("No changes detected.", "info")
+        return redirect(url_for('manage_accounts'))
+
+    try:
+        db.session.commit()
+
+        # Log only if there are actual changes
         change_summary = "; ".join(changes)
         new_activity = AdminActivity(
             admin_id=admin_id,
             action=f"Updated resident ({old_full_name}): {change_summary}"
         )
         db.session.add(new_activity)
-
-    db.session.commit()
-    flash('Resident updated successfully.', 'success')
-    return redirect(url_for('manage_accounts'))
-
-
-    try:
         db.session.commit()
-        flash('Resident details updated successfully.', 'success')
+
+        flash('Resident updated successfully.', 'success')
     except Exception as e:
         db.session.rollback()
         flash('Error updating resident: ' + str(e), 'danger')
 
     return redirect(url_for('manage_accounts'))
+
 
 
 @app.route('/admin_account', methods=['GET', 'POST'])
@@ -1995,34 +1991,49 @@ def admin_account():
         return redirect(url_for('login'))
 
     if request.method == 'POST':
-        admin.full_name = request.form['full_name']
-        admin.username = request.form['username']
-        admin.position = request.form['position']
-        admin.phone_number = request.form['phone_number']
+        # Get old values before overwriting
+        old_full_name = admin.full_name
+        old_username = admin.username
+        old_phone = admin.phone_number
+        old_position = getattr(admin, 'position', '')
 
-        password = request.form.get('password')
+        # Get new form values
+        full_name = request.form.get('full_name', '').strip()
+        username = request.form.get('username', '').strip()
+        position = request.form.get('position', '').strip()
+        phone_number = request.form.get('phone_number', '').strip()
+        password = request.form.get('password', '').strip()
+
+        # Detect changes
+        changes = []
+        if old_full_name != full_name:
+            changes.append(f"Full Name changed from '{old_full_name}' → '{full_name}'")
+            admin.full_name = full_name
+        if old_username != username:
+            changes.append(f"Username changed from '{old_username}' → '{username}'")
+            admin.username = username
+        if old_phone != phone_number:
+            changes.append(f"Phone changed from '{old_phone}' → '{phone_number}'")
+            admin.phone_number = phone_number
+        if old_position != position:
+            changes.append(f"Position changed from '{old_position}' → '{position}'")
+            admin.position = position
         if password:
             pattern = r'^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$'
             if not re.match(pattern, password):
                 flash("Password must be at least 8 characters long and include uppercase, lowercase, number, and special character.", "danger")
                 return redirect(url_for('admin_account'))
-
             admin.password_hash = generate_password_hash(password)
-
-        db.session.commit()
-
-        # Detect changes for logging
-        changes = []
-        if admin.full_name != request.form['full_name']:
-            changes.append(f"Name changed to '{request.form['full_name']}'")
-        if admin.username != request.form['username']:
-            changes.append(f"Username changed to '{request.form['username']}'")
-        if admin.phone_number != request.form['phone_number']:
-            changes.append(f"Phone changed to '{request.form['phone_number']}'")
-        if password:
             changes.append("Password changed")
-        
-        if changes:
+
+        if not changes:
+            flash("No changes detected.", "info")
+            return redirect(url_for('admin_account'))
+
+        try:
+            db.session.commit()
+
+            # Log activity
             new_activity = AdminActivity(
                 admin_id=admin.id,
                 action="; ".join(changes)
@@ -2030,14 +2041,17 @@ def admin_account():
             db.session.add(new_activity)
             db.session.commit()
 
+            flash('Account updated successfully!', 'success')
+        except Exception as e:
+            db.session.rollback()
+            flash('Error updating account: ' + str(e), 'danger')
 
-        flash('Account updated successfully!', 'success')
         return redirect(url_for('admin_account'))
 
     # Fetch activities (most recent first)
     activities = AdminActivity.query.filter_by(admin_id=admin.id).order_by(AdminActivity.timestamp.desc()).all()
-
     return render_template('admin_account.html', admin=admin, activities=activities)
+
 
 @app.route('/admin/forgot_password', methods=['GET', 'POST'])
 def admin_forgot_password():
