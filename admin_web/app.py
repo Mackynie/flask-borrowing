@@ -1948,13 +1948,24 @@ def edit_resident(id):
     resident.phone_number = phone_number
     resident.purok = purok
 
-    # Log admin activity
-    new_activity = AdminActivity(
-        admin_id=admin_id,
-        action=f"Edited resident: {old_full_name} (Username: {old_username}, Phone: {old_phone_number}, Purok: {old_purok}) → "
-               f"{full_name} (Username: {username}, Phone: {phone_number}, Purok: {purok})"
-    )
-    db.session.add(new_activity)
+    # Detect changes
+    changes = []
+    if old_full_name != full_name:
+        changes.append(f"Full Name: '{old_full_name}' → '{full_name}'")
+    if old_username != username:
+        changes.append(f"Username: '{old_username}' → '{username}'")
+    if old_phone_number != phone_number:
+        changes.append(f"Phone: '{old_phone_number}' → '{phone_number}'")
+    if old_purok != purok:
+        changes.append(f"Purok: '{old_purok}' → '{purok}'")
+    
+    if changes:
+        change_summary = "; ".join(changes)
+        new_activity = AdminActivity(
+            admin_id=admin_id,
+            action=f"Updated resident ({old_full_name}): {change_summary}"
+        )
+        db.session.add(new_activity)
 
     db.session.commit()
     flash('Resident updated successfully.', 'success')
@@ -2000,13 +2011,25 @@ def admin_account():
 
         db.session.commit()
 
-        # Log activity
-        new_activity = AdminActivity(
-            admin_id=admin.id,
-            action=f"Updated personal details (Name, Username, Position{', Password' if password else ''})"
-        )
-        db.session.add(new_activity)
-        db.session.commit()
+        # Detect changes for logging
+        changes = []
+        if admin.full_name != request.form['full_name']:
+            changes.append(f"Name changed to '{request.form['full_name']}'")
+        if admin.username != request.form['username']:
+            changes.append(f"Username changed to '{request.form['username']}'")
+        if admin.phone_number != request.form['phone_number']:
+            changes.append(f"Phone changed to '{request.form['phone_number']}'")
+        if password:
+            changes.append("Password changed")
+        
+        if changes:
+            new_activity = AdminActivity(
+                admin_id=admin.id,
+                action="; ".join(changes)
+            )
+            db.session.add(new_activity)
+            db.session.commit()
+
 
         flash('Account updated successfully!', 'success')
         return redirect(url_for('admin_account'))
