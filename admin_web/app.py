@@ -216,6 +216,8 @@ class Asset(db.Model):
     classification = db.Column(db.String(20), nullable=False, default='Borrowing')
     available_quantity = db.Column(db.Integer, nullable=True, default=0)
     active_borrowed = db.Column(db.Integer, nullable=True, default=0)
+    damaged = db.Column(db.Integer, default=0)
+
 
 
     # ✅ Relationships to Borrowing and Reservation
@@ -1336,42 +1338,58 @@ def update_asset(id):
         flash("Admin session expired. Please log in again.", "danger")
         return redirect(url_for('login'))
 
-    # Read form values
+    # 🧩 Read form inputs
     name = request.form['name'].strip()
-    added_quantity = int(request.form['quantity'])
+    added_quantity = int(request.form.get('quantity', 0))
+    damaged_quantity = int(request.form.get('damaged', 0))
     classification = request.form['classification']
 
-    # Get current asset
+    # 🧩 Get the asset record
     asset = Asset.query.get_or_404(id)
 
-    # Check duplicate name
+    # Prevent duplicate name conflict
     duplicate = Asset.query.filter(Asset.name == name, Asset.id != id).first()
     if duplicate:
         flash('Asset name already exists. Please use a different name.', 'danger')
         return redirect(url_for('assets_page'))
 
-    # Store old values for log
     old_name = asset.name
     old_quantity = asset.quantity
     old_classification = asset.classification
+    old_damaged = getattr(asset, 'damaged', 0)
 
-    # ✅ Add the new quantity to existing instead of replacing
-    new_total = old_quantity + added_quantity if added_quantity != old_quantity else old_quantity
+    # ✅ 1. Add new items to total
+    if added_quantity > 0:
+        asset.quantity += added_quantity
 
+    # ✅ 2. Deduct damaged items (Borrowing only)
+    if classification == "Borrowing" and damaged_quantity > 0:
+        if damaged_quantity > asset.quantity:
+            flash('Damaged quantity cannot exceed total quantity.', 'danger')
+            return redirect(url_for('assets_page'))
+        asset.quantity -= damaged_quantity
+        asset.damaged = old_damaged + damaged_quantity
+
+    # ✅ 3. Update other fields
     asset.name = name
-    asset.quantity = new_total
     asset.classification = classification
 
-    # Log activity
+    # ✅ 4. Log activity
     new_activity = AdminActivity(
         admin_id=admin_id,
-        action=f"Updated asset: {old_name} (Qty: {old_quantity}, Class: {old_classification}) → "
-               f"{asset.name} (Qty: {new_total}, Class: {asset.classification})"
+        action=(
+            f"Updated asset '{old_name}': "
+            f"+{added_quantity} added, "
+            f"{damaged_quantity} marked damaged "
+            f"(Total: {asset.quantity}, Damaged: {asset.damaged})"
+        )
     )
     db.session.add(new_activity)
     db.session.commit()
 
-    flash(f"Asset updated successfully! Added {added_quantity} to existing quantity ({old_quantity} → {new_total}).", "success")
+    # ✅ 5. Notify user
+    flash(f"Asset updated successfully! "
+          f"Added {added_quantity}, marked {damaged_quantity} damaged.", "success")
     return redirect(url_for('assets_page'))
 
 
