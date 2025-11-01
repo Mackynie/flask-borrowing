@@ -472,49 +472,54 @@ function buildExportFooter() {
 
 
 // ✅ Print Report
-// ✅ Print Report
 async function printReport() {
   const selectedFilter = document.getElementById('columnFilter').value;
   const filterTextMap = {
-      'all': 'All Columns',
-      'hideBorrowedAvailable': 'Total Quantity List',
-      'hideTotalAvailable': 'Active Borrowed List',
-      'hideTotalBorrowed': 'Available Quantity List',
-      'hideDamaged': 'Damaged Assets List'
-    };
+    'all': 'All Columns',
+    'hideBorrowedAvailable': 'Total Quantity List',
+    'hideTotalAvailable': 'Active Borrowed List',
+    'hideTotalBorrowed': 'Available Quantity List',
+    'hideDamaged': 'Damaged Assets List'
+  };
 
   const filterText = filterTextMap[selectedFilter] || 'All Columns';
-
   const headerHTML = await buildExportHeader();
   const footerHTML = buildExportFooter();
   const tableClone = document.getElementById('assetsTable').cloneNode(true);
-  // ✅ Apply Borrowing filter to printout
-    if (borrowingFilterActive) {
-      const rows = tableClone.querySelectorAll('tbody tr');
-      rows.forEach(row => {
-        const cells = row.querySelectorAll('td');
-        if (cells.length >= 6) {
-          const classification = cells[5].innerText.trim();
-          if (classification !== 'Borrowing') row.remove();
-        }
-      });
-    }
 
+  // ✅ Apply Borrowing filter to printout
+  if (borrowingFilterActive) {
+    const rows = tableClone.querySelectorAll('tbody tr');
+    rows.forEach(row => {
+      const cells = row.querySelectorAll('td');
+      if (cells.length >= 6) {
+        const classification = cells[5].innerText.trim();
+        if (classification !== 'Borrowing') row.remove();
+      }
+    });
+  }
 
   // Remove the "Actions" column
   tableClone.querySelectorAll('thead th:last-child, tbody td:last-child').forEach(el => el.remove());
   applyColumnFilter(tableClone, selectedFilter);
 
+  // ✅ Change title & label dynamically
+  const reportTitleText = borrowingFilterActive
+    ? 'BORROWABLE ASSETS REPORT'
+    : 'ASSETS REPORT';
+  const filterUsedText = borrowingFilterActive
+    ? 'Borrowing (Equipment) Only'
+    : filterText;
+
   const filterLabel = `
     <div style="font-size:12px; margin-bottom:5px; text-align:center;">
-      <strong>Filter Used:</strong> ${filterText}
+      <strong>Filter Used:</strong> ${filterUsedText}
     </div>
   `;
 
-  // ✅ Add this report title
   const reportTitle = `
     <h2 style="text-align:center; font-weight:700; margin:10px 0 5px 0; font-family:Arial;">
-      ASSETS REPORT
+      ${reportTitleText}
     </h2>
   `;
 
@@ -530,9 +535,10 @@ async function printReport() {
   const win = window.open('', '', 'width=900,height=650');
   win.document.write(`
     <html>
-      <head><title>Assets Report</title>${style}</head>
+      <head><title>${reportTitleText}</title>${style}</head>
       <body>
         ${headerHTML}
+        ${reportTitle}
         ${filterLabel}
         ${tableClone.outerHTML}
         ${footerHTML}
@@ -542,7 +548,6 @@ async function printReport() {
   win.document.close();
   win.onload = () => { win.focus(); win.print(); };
 }
-
 
 // ✅ PDF Export
 async function exportFilteredToPDF() {
