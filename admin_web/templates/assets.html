@@ -393,14 +393,21 @@ async function printBorrowingOnly() {
 
   const filterLabel = `
     <div style="font-size:12px; margin-bottom:5px; text-align:center;">
-      <strong>Filter Used:</strong> Borrowing (Equipment) Only
+      <strong>Filter Used:</strong> Borrowing List
     </div>
   `;
 
-  const reportTitle = `
-    <h2 style="text-align:center; font-weight:700; margin:10px 0 5px 0; font-family:Arial;">
-      BORROWING ASSETS REPORT
-    </h2>
+ const reportTitle = `
+    <div style="
+      text-align: center;
+      font-weight: 700;
+      font-size: 16px;
+      letter-spacing: 0.5px;
+      margin: 6px 0 4px 0;
+      font-family: Arial, sans-serif;
+    ">
+      ${reportTitleText}
+    </div>
   `;
 
   const style = `
