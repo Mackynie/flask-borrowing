@@ -85,6 +85,7 @@
             <option value="hideBorrowedAvailable">Total Quantity List</option>
             <option value="hideTotalAvailable">Active Borrowed List</option>
             <option value="hideTotalBorrowed">Available Quantity List</option>
+            <option value="hideDamaged">Damaged Assets List</option>
           </select>
         </div>
       </div>
@@ -290,6 +291,7 @@ function applyColumnFilter(tableClone, selectedFilter) {
   const indexTotal = headers.indexOf('Total Quantity');
   const indexAvailable = headers.indexOf('Available Quantity');
   const indexBorrowed = headers.indexOf('Active Borrowed');
+  const indexDamaged = headers.indexOf('Damaged Assets');
   const indexClass = headers.indexOf('Classification');
   const indexActions = headers.indexOf('Actions');
   const indexID = headers.indexOf('ID');
@@ -310,22 +312,26 @@ function applyColumnFilter(tableClone, selectedFilter) {
     cols.filter(i => i !== -1).sort((a, b) => b - a).forEach(removeColumn);
   };
 
-  // ✅ Updated filter logic
-  if (selectedFilter === 'hideBorrowedAvailable') {
-    // ➤ Show: Total Quantity only
-    removeMultiple(indexBorrowed, indexAvailable);
-  } 
-  else if (selectedFilter === 'hideTotalAvailable') {
-    // ➤ Show: Total Quantity + Active Borrowed
-    removeMultiple(indexAvailable);
-  } 
-  else if (selectedFilter === 'hideTotalBorrowed') {
-    // ➤ Show: Total Quantity + Available Quantity
-    removeMultiple(indexBorrowed);
-  } 
-  else if (selectedFilter === 'all') {
-    // ➤ Show all except Actions & ID (already removed)
-  }
+ // ✅ Updated filter logic
+if (selectedFilter === 'hideBorrowedAvailable') {
+  // ➤ Show: Total Quantity only
+  removeMultiple(indexBorrowed, indexAvailable, indexDamaged);
+} 
+else if (selectedFilter === 'hideTotalAvailable') {
+  // ➤ Show: Total Quantity + Active Borrowed
+  removeMultiple(indexAvailable, indexDamaged);
+} 
+else if (selectedFilter === 'hideTotalBorrowed') {
+  // ➤ Show: Total Quantity + Available Quantity
+  removeMultiple(indexBorrowed, indexDamaged);
+}
+else if (selectedFilter === 'hideDamaged') {
+  // ➤ Show only Damaged column + Name
+  removeMultiple(indexTotal, indexAvailable, indexBorrowed, indexClass);
+} 
+else if (selectedFilter === 'all') {
+  // ➤ Show all except Actions & ID (already removed)
+}
 }
 
 
@@ -376,11 +382,13 @@ function buildExportFooter() {
 async function printReport() {
   const selectedFilter = document.getElementById('columnFilter').value;
   const filterTextMap = {
-    'all': 'All Columns',
-    'hideBorrowedAvailable': 'Total Quantity List',
-    'hideTotalAvailable': 'Active Borrowed List ',
-    'hideTotalBorrowed': 'Available Quantity List'
-  };
+      'all': 'All Columns',
+      'hideBorrowedAvailable': 'Total Quantity List',
+      'hideTotalAvailable': 'Active Borrowed List',
+      'hideTotalBorrowed': 'Available Quantity List',
+      'hideDamaged': 'Damaged Assets List'
+    };
+
   const filterText = filterTextMap[selectedFilter] || 'All Columns';
 
   const headerHTML = await buildExportHeader();
