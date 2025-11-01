@@ -105,6 +105,7 @@
               <th>Total Quantity</th>
               <th>Available Quantity</th>
               <th>Active Borrowed</th>
+              <th>Damaged Assets</th>
               <th>Classification</th>
               <th>Actions</th>
             </tr>
@@ -118,6 +119,7 @@
                 <td>{{ asset.quantity }}</td>
                 <td>{{ available_assets if available_assets > 0 else 0 }}</td>
                 <td>{{ active_borrowed }}</td>
+                <td class="{% if asset.damaged > 0 %}text-danger fw-bold{% endif %}">{{ asset.damaged }}</td>
                 <td>{{ asset.classification }}</td>
                 <td>
                   <button class="btn btn-warning btn-sm" data-bs-toggle="modal" data-bs-target="#editAssetModal{{ asset.id }}">
