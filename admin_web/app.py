@@ -1338,44 +1338,40 @@ def update_asset(id):
 
     # Read form values
     name = request.form['name'].strip()
-    quantity = int(request.form['quantity'])
+    added_quantity = int(request.form['quantity'])
     classification = request.form['classification']
 
     # Get current asset
     asset = Asset.query.get_or_404(id)
 
-    # Check if new name already exists on another asset
-    duplicate = Asset.query.filter(
-        Asset.name == name,
-        Asset.id != id
-    ).first()
-
+    # Check duplicate name
+    duplicate = Asset.query.filter(Asset.name == name, Asset.id != id).first()
     if duplicate:
         flash('Asset name already exists. Please use a different name.', 'danger')
         return redirect(url_for('assets_page'))
 
-    # Store old values for activity log
+    # Store old values for log
     old_name = asset.name
     old_quantity = asset.quantity
     old_classification = asset.classification
 
-    # Update asset
+    # ✅ Add the new quantity to existing instead of replacing
+    new_total = old_quantity + added_quantity if added_quantity != old_quantity else old_quantity
+
     asset.name = name
-    asset.quantity = quantity
+    asset.quantity = new_total
     asset.classification = classification
 
-    # Log admin activity before commit
+    # Log activity
     new_activity = AdminActivity(
         admin_id=admin_id,
         action=f"Updated asset: {old_name} (Qty: {old_quantity}, Class: {old_classification}) → "
-               f"{asset.name} (Qty: {asset.quantity}, Class: {asset.classification})"
+               f"{asset.name} (Qty: {new_total}, Class: {asset.classification})"
     )
     db.session.add(new_activity)
-
-    # Commit both asset update and activity
     db.session.commit()
 
-    flash('Asset updated successfully!', 'success')
+    flash(f"Asset updated successfully! Added {added_quantity} to existing quantity ({old_quantity} → {new_total}).", "success")
     return redirect(url_for('assets_page'))
 
 
