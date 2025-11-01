@@ -363,16 +363,21 @@ def dashboard():
     reservations = Reservation.query.order_by(Reservation.reservation_start.desc()).all()
     borrowings = Borrowing.query.order_by(Borrowing.request_date.desc()).all()
 
-    print("[DEBUG] Borrowings sent to dashboard:")
-    for b in borrowings:
-        print(f"{b.id} - {b.item} - {b.status}")
+    # ✅ Separate overdue borrowings (past return_date and not Returned)
+    today = datetime.now().date()
+    overdue_borrowings = [
+        b for b in borrowings
+        if b.status in ('Approved', 'Return Requested') and b.return_date < today
+    ]
+
     residents = Resident.query.all()
-    
+
     return render_template(
         'dashboard.html',
         assets=assets,
         reservations=reservations,
         borrowings=borrowings,
+        overdue_borrowings=overdue_borrowings,  # ✅ pass overdue list
         residents=residents
     )
 
