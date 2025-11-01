@@ -95,9 +95,10 @@
         <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addAssetModal">
           <i class="bi bi-plus-circle me-1"></i> Add Asset
         </button>
-        <button class="btn btn-sm btn-outline-primary ms-2" onclick="printBorrowingOnly()">
-          <i class="bi bi-box-arrow-down me-1"></i> Borrowing Only
+        <button id="filterBorrowingBtn" class="btn btn-outline-danger ms-2" onclick="toggleBorrowingFilter()">
+          <i class="bi bi-filter-circle me-1"></i> Borrowing
         </button>
+
 
       </div>
 
@@ -338,6 +339,35 @@ else if (selectedFilter === 'all') {
 }
 }
 
+  let borrowingFilterActive = false; // Track if Borrowing filter is active
+
+function toggleBorrowingFilter() {
+  borrowingFilterActive = !borrowingFilterActive;
+
+  const button = document.getElementById('filterBorrowingBtn');
+  const rows = document.querySelectorAll('#assetsTable tbody tr');
+
+  if (borrowingFilterActive) {
+    // ✅ Activate filter: show only Borrowing
+    button.classList.remove('btn-outline-danger');
+    button.classList.add('btn-danger');
+    rows.forEach(row => {
+      const cells = row.querySelectorAll('td');
+      const classification = cells[5]?.innerText.trim();
+      row.style.display = classification === 'Borrowing' ? '' : 'none';
+      row.classList.toggle('export-visible', classification === 'Borrowing');
+    });
+  } else {
+    // ❌ Deactivate filter: show all rows
+    button.classList.remove('btn-danger');
+    button.classList.add('btn-outline-danger');
+    rows.forEach(row => {
+      row.style.display = '';
+      row.classList.add('export-visible');
+    });
+  }
+}
+
 
 async function printBorrowingOnly() {
   const headerHTML = await buildExportHeader();
@@ -458,6 +488,18 @@ async function printReport() {
   const headerHTML = await buildExportHeader();
   const footerHTML = buildExportFooter();
   const tableClone = document.getElementById('assetsTable').cloneNode(true);
+  // ✅ Apply Borrowing filter to printout
+    if (borrowingFilterActive) {
+      const rows = tableClone.querySelectorAll('tbody tr');
+      rows.forEach(row => {
+        const cells = row.querySelectorAll('td');
+        if (cells.length >= 6) {
+          const classification = cells[5].innerText.trim();
+          if (classification !== 'Borrowing') row.remove();
+        }
+      });
+    }
+
 
   // Remove the "Actions" column
   tableClone.querySelectorAll('thead th:last-child, tbody td:last-child').forEach(el => el.remove());
