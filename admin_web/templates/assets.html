@@ -95,6 +95,10 @@
         <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addAssetModal">
           <i class="bi bi-plus-circle me-1"></i> Add Asset
         </button>
+        <button class="btn btn-sm btn-outline-primary ms-2" onclick="printBorrowingOnly()">
+          <i class="bi bi-box-arrow-down me-1"></i> Borrowing Only
+        </button>
+
       </div>
 
       <!-- Assets Table -->
@@ -335,6 +339,66 @@ else if (selectedFilter === 'all') {
 }
 
 
+async function printBorrowingOnly() {
+  const headerHTML = await buildExportHeader();
+  const footerHTML = buildExportFooter();
+
+  const table = document.getElementById('assetsTable');
+  const tableClone = table.cloneNode(true);
+
+  // Remove "Actions" column
+  tableClone.querySelectorAll('thead th:last-child, tbody td:last-child').forEach(el => el.remove());
+
+  // ✅ Keep only rows where classification == "Borrowing"
+  const rows = tableClone.querySelectorAll('tbody tr');
+  rows.forEach(row => {
+    const cells = row.querySelectorAll('td');
+    if (cells.length >= 6) {
+      const classification = cells[5].innerText.trim();
+      if (classification !== 'Borrowing') {
+        row.remove();
+      }
+    }
+  });
+
+  const filterLabel = `
+    <div style="font-size:12px; margin-bottom:5px; text-align:center;">
+      <strong>Filter Used:</strong> Borrowing (Equipment) Only
+    </div>
+  `;
+
+  const reportTitle = `
+    <h2 style="text-align:center; font-weight:700; margin:10px 0 5px 0; font-family:Arial;">
+      BORROWING ASSETS REPORT
+    </h2>
+  `;
+
+  const style = `
+    <style>
+      body { font-family: Arial, sans-serif; padding: 20px; color: #000; }
+      table { border-collapse: collapse; width: 100%; }
+      th, td { border: 0.5px solid black; padding: 4px; font-size: 12px; text-align: center; }
+      th { font-weight: bold; background-color: #f2f2f2; }
+      td:nth-child(5) { color: red; font-weight: bold; } /* highlight damaged column */
+    </style>
+  `;
+
+  const win = window.open('', '', 'width=900,height=650');
+  win.document.write(`
+    <html>
+      <head><title>Borrowing Assets Report</title>${style}</head>
+      <body>
+        ${headerHTML}
+        ${reportTitle}
+        ${filterLabel}
+        ${tableClone.outerHTML}
+        ${footerHTML}
+      </body>
+    </html>
+  `);
+  win.document.close();
+  win.onload = () => { win.focus(); win.print(); };
+}
 
 
 async function toBase64(url) {
