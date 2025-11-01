@@ -408,20 +408,29 @@ async function printOverdueReport() {
   const title = buildOverdueTitle();
   const footer = buildOverdueFooter();
 
+  // Clone the table so we can safely modify it for printing
+  const tableClone = table.cloneNode(true);
+  const actionIndex = Array.from(tableClone.rows[0].cells).findIndex(th => th.textContent.trim() === 'Action');
+  if (actionIndex !== -1) {
+    // Remove Action column from header and all rows
+    Array.from(tableClone.rows).forEach(row => row.deleteCell(actionIndex));
+  }
+
   const style = `
   <style>
     body { font-family: Arial, sans-serif; padding: 20px; color: #000; }
-    table { width: 100%; border-collapse: collapse; }
+    table { width: 100%; border-collapse: collapse; margin-top: 10px; }
     th, td { border: 0.5px solid black; padding: 4px; text-align: center; font-size: 12px; }
     th { font-weight: bold; background: #f8f9fa; }
     .footer { display:flex; justify-content:space-between; font-size:12px; margin-top:8px; }
   </style>`;
 
   const win = window.open('', '', 'width=800,height=600');
-  win.document.write(`<html><head><title>Print</title>${style}</head><body>${header}${title}${table.outerHTML}${footer}</body></html>`);
+  win.document.write(`<html><head><title>Print</title>${style}</head><body>${header}${title}${tableClone.outerHTML}${footer}</body></html>`);
   win.document.close();
   win.onload = () => { win.focus(); win.print(); };
 }
+
   AOS.init({ duration: 800, once: true });
 
   document.addEventListener("DOMContentLoaded", function() {
