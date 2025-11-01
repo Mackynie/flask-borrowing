@@ -123,8 +123,16 @@
                   <button class="btn btn-warning btn-sm" data-bs-toggle="modal" data-bs-target="#editAssetModal{{ asset.id }}">
                     <i class="bi bi-pencil"></i> Edit
                   </button>
-                  <a href="{{ url_for('delete_asset', id=asset.id) }}" class="btn btn-danger btn-sm" onclick="return confirm('Are you sure?')">
-                    <i class="bi bi-trash"></i> Delete
+                
+                  <!-- 🛠️ Mark as Damaged (Borrowing only) -->
+                  {% if asset.classification == 'Borrowing' %}
+                  <button class="btn btn-danger btn-sm" data-bs-toggle="modal" data-bs-target="#damageAssetModal{{ asset.id }}">
+                    <i class="bi bi-tools"></i> Mark Damaged
+                  </button>
+                  {% endif %}
+                
+                  <a href="{{ url_for('delete_asset', id=asset.id) }}" class="btn btn-outline-danger btn-sm" onclick="return confirm('Are you sure?')">
+                    <i class="bi bi-trash"></i>
                   </a>
                 </td>
               </tr>
@@ -176,6 +184,40 @@
   </div>
 </div>
 {% endfor %}
+
+<!-- 🛠️ Mark as Damaged Modal -->
+{% for asset in assets %}
+<div class="modal fade" id="damageAssetModal{{ asset.id }}" tabindex="-1">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <form method="POST" action="{{ url_for('update_asset', id=asset.id) }}">
+        <div class="modal-header bg-danger text-white">
+          <h5 class="modal-title"><i class="bi bi-tools me-1"></i> Mark Damaged Asset</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body">
+          <p><strong>{{ asset.name }}</strong></p>
+          <p>Current Total Quantity: <strong>{{ asset.quantity }}</strong></p>
+          <p>Currently Damaged: <strong>{{ asset.damaged }}</strong></p>
+
+          <div class="mb-3">
+            <label class="form-label">Damaged Quantity</label>
+            <input type="number" name="damaged" class="form-control" placeholder="Enter number of damaged items" min="1" required>
+            <input type="hidden" name="name" value="{{ asset.name }}">
+            <input type="hidden" name="quantity" value="0">
+            <input type="hidden" name="classification" value="{{ asset.classification }}">
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+          <button type="submit" class="btn btn-danger"><i class="bi bi-check-circle me-1"></i> Confirm Damage</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+{% endfor %}
+
 
 <!-- Add Asset Modal -->
 <div class="modal fade" id="addAssetModal" tabindex="-1">
