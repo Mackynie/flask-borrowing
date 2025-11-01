@@ -327,7 +327,7 @@ else if (selectedFilter === 'hideTotalBorrowed') {
 }
 else if (selectedFilter === 'hideDamaged') {
   // ➤ Show only Damaged column + Name
-  removeMultiple(indexTotal, indexAvailable, indexBorrowed, indexClass);
+  removeMultiple(indexAvailable, indexBorrowed);
 } 
 else if (selectedFilter === 'all') {
   // ➤ Show all except Actions & ID (already removed)
