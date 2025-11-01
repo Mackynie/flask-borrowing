@@ -363,11 +363,11 @@ def dashboard():
     reservations = Reservation.query.order_by(Reservation.reservation_start.desc()).all()
     borrowings = Borrowing.query.order_by(Borrowing.request_date.desc()).all()
 
-    # ✅ Separate overdue borrowings (past return_date and not Returned)
+    # ✅ Fix: convert b.return_date to .date() before comparing
     today = datetime.now().date()
     overdue_borrowings = [
         b for b in borrowings
-        if b.status in ('Approved', 'Return Requested') and b.return_date < today
+        if b.status in ('Approved', 'Return Requested') and b.return_date.date() < today
     ]
 
     residents = Resident.query.all()
@@ -377,9 +377,10 @@ def dashboard():
         assets=assets,
         reservations=reservations,
         borrowings=borrowings,
-        overdue_borrowings=overdue_borrowings,  # ✅ pass overdue list
+        overdue_borrowings=overdue_borrowings,
         residents=residents
     )
+
 
 
 @app.route('/add_asset', methods=['POST'])
