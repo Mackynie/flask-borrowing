@@ -269,11 +269,16 @@
 
         <!-- Overdue Tab -->
         <div class="tab-pane fade" id="overdue" role="tabpanel" data-aos="fade-up">
-          <h5>Overdue Borrowings</h5>
+          <div class="d-flex justify-content-between align-items-center">
+            <h5>Overdue Borrowings</h5>
+            <button class="btn btn-sm btn-outline-dark" onclick="printOverdueReport()">
+              <i class="bi bi-printer me-1"></i> Print
+            </button>
+          </div>
           <div class="card shadow-sm mb-4">
             <div class="card-body">
               {% if overdue_borrowings and overdue_borrowings|length > 0 %}
-              <table class="table table-striped table-hover align-middle">
+              <table id="overdueTable" class="table table-striped table-hover align-middle">
                 <thead class="table-light">
                   <tr>
                     <th>Resident</th>
@@ -348,7 +353,74 @@
 
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/aos@2.3.4/dist/aos.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+
 <script>
+async function toBase64(url) {
+  const res = await fetch(url, {cache:"no-store"});
+  const blob = await res.blob();
+  return new Promise(resolve => {
+    const reader = new FileReader();
+    reader.onloadend = () => resolve(reader.result);
+    reader.readAsDataURL(blob);
+  });
+}
+
+async function buildOverdueHeader() {
+  const pob5Logo = await toBase64("{{ url_for('static', filename='img/POB5.jpg') }}");
+  const barmaLogo = await toBase64("{{ url_for('static', filename='img/logo3.png') }}");
+  return `
+  <div style="position: relative; text-align: center; margin-bottom: 8px; height: 100px;">
+    <img src="${pob5Logo}" style="position: absolute; left: 0; top: 40%; transform: translateY(-50%); height: 60px;" />
+    <img src="${barmaLogo}" style="position: absolute; right: 0; top: 40%; transform: translateY(-50%); height: 100px;" />
+    <div style="position: relative; z-index: 1;">
+      <div style="font-weight:700; font-size:18px;">POBLACION 5</div>
+      <div style="font-size:12px;">Poblacion 5, Midsayap, Cotabato</div>
+      <div style="font-size:11px; margin-top:2px;">BARMA</div>
+      <div style="margin:6px auto 0; width: 75%; border-top:1px solid #000;"></div>
+    </div>
+  </div>`;
+}
+
+function buildOverdueTitle() {
+  return `
+  <div style="text-align:center; margin:12px 0;">
+    <div style="font-weight:700; font-size:14px;">OVERDUE BORROWINGS REPORT</div>
+    <div style="font-size:12px;">As of ${new Date().toLocaleDateString()}</div>
+  </div>`;
+}
+
+function buildOverdueFooter() {
+  const today = new Date().toLocaleDateString();
+  return `
+  <div style="font-size:12px; margin-top:8px; display:flex; justify-content: space-between;">
+    <span>Print date: ${today}</span>
+    <span>Printed by: {{ admin_name }}</span>
+  </div>`;
+}
+
+async function printOverdueReport() {
+  const table = document.getElementById('overdueTable');
+  if (!table) return alert('No overdue records to print.');
+
+  const header = await buildOverdueHeader();
+  const title = buildOverdueTitle();
+  const footer = buildOverdueFooter();
+
+  const style = `
+  <style>
+    body { font-family: Arial, sans-serif; padding: 20px; color: #000; }
+    table { width: 100%; border-collapse: collapse; }
+    th, td { border: 0.5px solid black; padding: 4px; text-align: center; font-size: 12px; }
+    th { font-weight: bold; background: #f8f9fa; }
+    .footer { display:flex; justify-content:space-between; font-size:12px; margin-top:8px; }
+  </style>`;
+
+  const win = window.open('', '', 'width=800,height=600');
+  win.document.write(`<html><head><title>Print</title>${style}</head><body>${header}${title}${table.outerHTML}${footer}</body></html>`);
+  win.document.close();
+  win.onload = () => { win.focus(); win.print(); };
+}
   AOS.init({ duration: 800, once: true });
 
   document.addEventListener("DOMContentLoaded", function() {
