@@ -346,6 +346,32 @@
                     <tr id="noOverdueRecordsRow" style="display:none;">
                       <td colspan="7" class="text-center text-muted">No records found.</td>
                     </tr>
+
+                    <!-- Overdue Print Option Modal -->
+                    <div class="modal fade" id="overduePrintModal" tabindex="-1" aria-labelledby="overduePrintModalLabel" aria-hidden="true">
+                      <div class="modal-dialog modal-dialog-centered">
+                        <div class="modal-content border-0 shadow-sm">
+                          <div class="modal-header bg-warning">
+                            <h5 class="modal-title fw-bold" id="overduePrintModalLabel"><i class="bi bi-printer-fill me-2"></i>Print Overdue Report</h5>
+                            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                          </div>
+                          <div class="modal-body text-center">
+                            <p class="mb-3">Select what part of the overdue report you want to print:</p>
+                            <div class="d-grid gap-2">
+                              <button class="btn btn-outline-dark" onclick="printOverdueReport('summary')" data-bs-dismiss="modal">
+                                <i class="bi bi-file-earmark-bar-graph me-1"></i> Overdue Summary Only
+                              </button>
+                              <button class="btn btn-outline-dark" onclick="printOverdueReport('list')" data-bs-dismiss="modal">
+                                <i class="bi bi-list-ul me-1"></i> Overdue List Only
+                              </button>
+                              <button class="btn btn-dark" onclick="printOverdueReport('both')" data-bs-dismiss="modal">
+                                <i class="bi bi-collection me-1"></i> Both Summary & List
+                              </button>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
                   </tbody>
                 </table>
               </div>
@@ -552,29 +578,30 @@ function buildExportFooter() {
   `;
 }
 
-async function chooseOverduePrintOption() {
-  const choice = confirm("Do you want to print both the Overdue Summary and the Overdue List?\n\nClick 'OK' for both, 'Cancel' for summary only.");
-  await printOverdueReport(choice);
+function chooseOverduePrintOption() {
+  const modal = new bootstrap.Modal(document.getElementById('overduePrintModal'));
+  modal.show();
 }
 
-async function printOverdueReport(includeList = true) {
+async function printOverdueReport(option) {
   const summaryTable = document.getElementById('overdueSummaryTable');
   const listTable = document.getElementById('overdueTable');
 
-  if (!summaryTable && !listTable) return alert('No overdue records to print.');
+  if (!summaryTable && !listTable) return alert('No overdue records available.');
 
   const header = await buildExportHeader();
   const footer = buildExportFooter();
 
-  let title = `
+  let titleText = '';
+  if (option === 'summary') titleText = 'Overdue Summary Report';
+  else if (option === 'list') titleText = 'Overdue Borrowing List';
+  else titleText = 'Overdue Report (Summary & List)';
+
+  const title = `
     <div style="text-align:center; margin:12px 0;">
-      <div style="font-weight:700; font-size:14px;">OVERDUE REPORT</div>
-      <div style="font-size:12px;">${includeList ? 'Includes Overdue Summary and Borrowing List' : 'Overdue Summary Only'}</div>
+      <div style="font-weight:700; font-size:14px;">${titleText.toUpperCase()}</div>
     </div>
   `;
-
-  const summaryClone = summaryTable ? summaryTable.cloneNode(true) : null;
-  const listClone = includeList && listTable ? listTable.cloneNode(true) : null;
 
   const style = `
     <style>
@@ -585,18 +612,28 @@ async function printOverdueReport(includeList = true) {
     </style>
   `;
 
+  const summaryHTML = summaryTable ? summaryTable.cloneNode(true).outerHTML : '';
+  const listHTML = listTable ? listTable.cloneNode(true).outerHTML : '';
+
+  let content = '';
+  if (option === 'summary') content = summaryHTML;
+  else if (option === 'list') content = listHTML;
+  else content = `${summaryHTML}<br><h6 style="font-weight:700; text-align:center;">OVERDUE BORROWINGS LIST</h6>${listHTML}`;
+
   const printWindow = window.open('', '_blank', 'width=800,height=600');
   printWindow.document.write(`
-    <html><head><title>Print</title>${style}</head><body>
-      ${header}
-      ${title}
-      ${summaryClone ? summaryClone.outerHTML : ''}
-      ${listClone ? `<br><h6 style="font-weight:700; text-align:center;">OVERDUE BORROWINGS LIST</h6>${listClone.outerHTML}` : ''}
-      ${footer}
-    </body></html>
+    <html>
+      <head><title>Print Overdue Report</title>${style}</head>
+      <body>
+        ${header}
+        ${title}
+        ${content}
+        ${footer}
+      </body>
+    </html>
   `);
-
   printWindow.document.close();
+
   printWindow.onload = () => {
     printWindow.focus();
     printWindow.print();
