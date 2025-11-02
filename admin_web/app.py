@@ -758,17 +758,6 @@ def generate_residents_report():
     response.headers["Content-Type"] = "text/csv"
     return response
 
-from datetime import datetime
-from collections import Counter
-from flask import render_template, redirect, url_for, session
-
-from datetime import datetime
-from collections import Counter
-from flask import render_template, redirect, url_for, session
-
-from datetime import datetime
-from collections import Counter
-from flask import render_template, redirect, url_for, session
 
 @app.route('/history')
 def history_page():
