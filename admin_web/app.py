@@ -767,6 +767,10 @@ from datetime import datetime
 from collections import Counter
 from flask import render_template, redirect, url_for, session
 
+from datetime import datetime
+from collections import Counter
+from flask import render_template, redirect, url_for, session
+
 @app.route('/history')
 def history_page():
     if not session.get('admin'):
@@ -777,12 +781,13 @@ def history_page():
                                    .order_by(History.action_date.desc())\
                                    .all()
 
-    # Other history logs (Borrowing, Reservation, etc.)
-    other_logs = History.query.filter(History.type != 'Account Restriction')\
-                              .order_by(History.action_date.desc())\
-                              .all()
+    # ✅ Exclude Overdue entries from Borrowing/Reservation tab
+    other_logs = History.query.filter(
+        History.type != 'Account Restriction',
+        History.action_type != 'Overdue'
+    ).order_by(History.action_date.desc()).all()
 
-    # ✅ Detect overdue borrowings that aren't yet logged in History
+    # ✅ Detect borrowings that are overdue but not yet logged
     overdue_borrowings = Borrowing.query.filter(
         Borrowing.status == 'Approved',
         Borrowing.return_date < datetime.utcnow()
@@ -811,9 +816,9 @@ def history_page():
             )
             db.session.add(new_history)
 
-    db.session.commit()  # ✅ permanently store overdue logs
+    db.session.commit()
 
-    # Retrieve all overdue logs from History (so they remain visible)
+    # ✅ Get overdue records from History (for the Overdue tab only)
     overdue_history = History.query.filter_by(action_type='Overdue')\
                                    .order_by(History.action_date.desc())\
                                    .all()
@@ -830,9 +835,9 @@ def history_page():
     return render_template(
         'history.html',
         restriction_logs=restriction_logs,
-        other_logs=other_logs,
+        other_logs=other_logs,          # Borrowings & Reservations only
         restriction_summary=restriction_summary,
-        overdue_borrowings=overdue_history,  # 🟨 use permanent overdue records
+        overdue_borrowings=overdue_history,  # Separate tab
         username=admin.full_name
     )
 
