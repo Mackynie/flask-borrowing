@@ -1681,9 +1681,8 @@ def get_resident_history(full_name):
     try:
         history_entries = (
             History.query
-            .filter_by(resident_name=full_name)  # still filtering by resident_name in the DB
+            .filter(func.lower(History.resident_name) == full_name.lower())  # still filtering by resident_name in the DB
             .order_by(History.action_date.desc())
-            .limit(10)
             .all()
         )
 
