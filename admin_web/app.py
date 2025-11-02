@@ -780,16 +780,18 @@ def history_page():
                                    .order_by(History.action_date.desc())\
                                    .all()
 
-    # ✅ Exclude Overdue entries from Borrowing/Reservation tab
+    # Exclude Overdue entries from Borrowing/Reservation tab
     other_logs = History.query.filter(
         History.type != 'Account Restriction',
         History.action_type != 'Overdue'
     ).order_by(History.action_date.desc()).all()
 
-    # ✅ Detect borrowings that are overdue but not yet logged
+    today = datetime.utcnow().date()
+
+    # ✅ Compare only date parts using func.date()
     overdue_borrowings = Borrowing.query.filter(
         Borrowing.status == 'Approved',
-        Borrowing.return_date < datetime.utcnow().date()
+        func.date(Borrowing.return_date) < today
     ).all()
 
     for b in overdue_borrowings:
@@ -817,12 +819,11 @@ def history_page():
 
     db.session.commit()
 
-    # ✅ Get overdue records from History (for the Overdue tab only)
+    # Get overdue records for Overdue tab
     overdue_history = History.query.filter_by(action_type='Overdue')\
                                    .order_by(History.action_date.desc())\
                                    .all()
 
-    # Restriction summary
     restriction_summary = Counter([
         r.resident_name
         for r in restriction_logs
@@ -834,14 +835,11 @@ def history_page():
     return render_template(
         'history.html',
         restriction_logs=restriction_logs,
-        other_logs=other_logs,          # Borrowings & Reservations only
+        other_logs=other_logs,
         restriction_summary=restriction_summary,
-        overdue_borrowings=overdue_history,  # Separate tab
+        overdue_borrowings=overdue_history,
         username=admin.full_name
     )
-
-
-
 
 @app.route('/return_borrowing/<int:borrowing_id>', methods=['POST'])
 def return_borrowing(borrowing_id): 
