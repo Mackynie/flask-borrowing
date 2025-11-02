@@ -285,7 +285,15 @@
             <div class="card-body">
               <div class="d-flex justify-content-between align-items-center mb-2">
                 <h5>Overdue Borrowings</h5>
-                {% if overdue_summary %}
+               
+                <button class="btn btn-sm text-dark fw-semibold" 
+                        style="background-color:#ffc107; border:none;" 
+                        onclick="printOverdueReport()">
+                  <i class="bi bi-printer me-1"></i> Print
+                </button>
+              </div>
+
+               {% if overdue_summary %}
                   <div class="card shadow-sm mb-4" data-aos="fade-up">
                     <div class="card-body">
                       <h6 class="fw-bold">Overdue Summary</h6>
@@ -311,13 +319,7 @@
                   </div>
                   {% endif %}
 
-                <button class="btn btn-sm text-dark fw-semibold" 
-                        style="background-color:#ffc107; border:none;" 
-                        onclick="printOverdueReport()">
-                  <i class="bi bi-printer me-1"></i> Print
-                </button>
-              </div>
-        
+              
               {% if overdue_borrowings and overdue_borrowings|length > 0 %}
               <div class="table-responsive">
                 <table id="overdueTable" class="table table-bordered table-hover align-middle">
