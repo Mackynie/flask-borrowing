@@ -764,23 +764,21 @@ def history_page():
     if not session.get('admin'):
         return redirect(url_for('login'))
 
-    # Restriction logs
     restriction_logs = History.query.filter_by(type='Account Restriction')\
                                    .order_by(History.action_date.desc())\
                                    .all()
 
-    # Exclude Overdue entries from Borrowing/Reservation tab
     other_logs = History.query.filter(
         History.type != 'Account Restriction',
         History.action_type != 'Overdue'
     ).order_by(History.action_date.desc()).all()
 
-    today = datetime.utcnow().date()
+    # ✅ Use Philippine time to detect overdue borrowings correctly
+    today_ph = datetime.now(PH_TZ).date()
 
-    # ✅ Compare only date parts using func.date()
     overdue_borrowings = Borrowing.query.filter(
         Borrowing.status == 'Approved',
-        func.date(Borrowing.return_date) < today
+        func.date(Borrowing.return_date) < today_ph
     ).all()
 
     for b in overdue_borrowings:
@@ -799,7 +797,7 @@ def history_page():
                 quantity=b.quantity,
                 purpose=b.purpose,
                 action_type='Overdue',
-                action_date=datetime.utcnow(),
+                action_date=datetime.now(PH_TZ),
                 borrow_date=b.request_date,
                 return_date=b.return_date,
                 reason='Borrowing not returned on time.'
@@ -808,7 +806,6 @@ def history_page():
 
     db.session.commit()
 
-    # Get overdue records for Overdue tab
     overdue_history = History.query.filter_by(action_type='Overdue')\
                                    .order_by(History.action_date.desc())\
                                    .all()
@@ -829,6 +826,7 @@ def history_page():
         overdue_borrowings=overdue_history,
         username=admin.full_name
     )
+
 
 @app.route('/return_borrowing/<int:borrowing_id>', methods=['POST'])
 def return_borrowing(borrowing_id): 
