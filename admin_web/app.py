@@ -789,7 +789,7 @@ def history_page():
     # ✅ Detect borrowings that are overdue but not yet logged
     overdue_borrowings = Borrowing.query.filter(
         Borrowing.status == 'Approved',
-        Borrowing.return_date < datetime.utcnow()
+        Borrowing.return_date < datetime.utcnow().date()
     ).all()
 
     for b in overdue_borrowings:
