@@ -763,6 +763,10 @@ from datetime import datetime
 from collections import Counter
 from flask import render_template, redirect, url_for, session
 
+from datetime import datetime
+from collections import Counter
+from flask import render_template, redirect, url_for, session
+
 @app.route('/history')
 def history_page():
     if not session.get('admin'):
@@ -778,11 +782,41 @@ def history_page():
                               .order_by(History.action_date.desc())\
                               .all()
 
-    # Overdue Borrowings: Approved borrowings past their return date
+    # ✅ Detect overdue borrowings that aren't yet logged in History
     overdue_borrowings = Borrowing.query.filter(
         Borrowing.status == 'Approved',
         Borrowing.return_date < datetime.utcnow()
-    ).order_by(Borrowing.return_date.asc()).all()
+    ).all()
+
+    for b in overdue_borrowings:
+        already_logged = History.query.filter_by(
+            type='Borrowing',
+            resident_name=b.resident_name,
+            item=b.item,
+            action_type='Overdue'
+        ).first()
+
+        if not already_logged:
+            new_history = History(
+                type='Borrowing',
+                resident_name=b.resident_name,
+                item=b.item,
+                quantity=b.quantity,
+                purpose=b.purpose,
+                action_type='Overdue',
+                action_date=datetime.utcnow(),
+                borrow_date=b.request_date,
+                return_date=b.return_date,
+                reason='Borrowing not returned on time.'
+            )
+            db.session.add(new_history)
+
+    db.session.commit()  # ✅ permanently store overdue logs
+
+    # Retrieve all overdue logs from History (so they remain visible)
+    overdue_history = History.query.filter_by(action_type='Overdue')\
+                                   .order_by(History.action_date.desc())\
+                                   .all()
 
     # Restriction summary
     restriction_summary = Counter([
@@ -798,7 +832,7 @@ def history_page():
         restriction_logs=restriction_logs,
         other_logs=other_logs,
         restriction_summary=restriction_summary,
-        overdue_borrowings=overdue_borrowings,
+        overdue_borrowings=overdue_history,  # 🟨 use permanent overdue records
         username=admin.full_name
     )
 
