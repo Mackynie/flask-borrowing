@@ -283,42 +283,40 @@
         <div class="tab-pane fade" id="overdue" role="tabpanel">
           <div class="card shadow-sm mb-4" data-aos="fade-up">
             <div class="card-body">
-              <div class="d-flex justify-content-between align-items-center mb-2">
-               
+              <div class="d-flex justify-content-end align-items-center mb-2">
                 <button class="btn btn-sm text-dark fw-semibold" 
                         style="background-color:#ffc107; border:none;" 
-                        onclick="printOverdueReport()">
+                        onclick="chooseOverduePrintOption()">
                   <i class="bi bi-printer me-1"></i> Print
                 </button>
               </div>
-
-               {% if overdue_summary %}
-                  <div class="card shadow-sm mb-4" data-aos="fade-up">
-                    <div class="card-body">
-                      <h6 class="fw-bold">Overdue Summary</h6>
-                      <div class="table-responsive w-100">
-                        <table class="table table-bordered align-middle mb-0">
-                          <thead class="table-light">
-                            <tr>
-                              <th>Resident</th>
-                              <th>Total Overdue Incidents</th>
-                            </tr>
-                          </thead>
-                          <tbody>
-                            {% for resident, count in overdue_summary.items() %}
-                            <tr>
-                              <td>{{ resident }}</td>
-                              <td>{{ count }}</td>
-                            </tr>
-                            {% endfor %}
-                          </tbody>
-                        </table>
-                      </div>
-                    </div>
+        
+              {% if overdue_summary %}
+              <div class="card shadow-sm mb-4" data-aos="fade-up">
+                <div class="card-body">
+                  <h6 class="fw-bold">Overdue Summary</h6>
+                  <div class="table-responsive w-100">
+                    <table id="overdueSummaryTable" class="table table-bordered align-middle mb-0">
+                      <thead class="table-light">
+                        <tr>
+                          <th>Resident</th>
+                          <th>Total Overdue Incidents</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {% for resident, count in overdue_summary.items() %}
+                        <tr>
+                          <td>{{ resident }}</td>
+                          <td>{{ count }}</td>
+                        </tr>
+                        {% endfor %}
+                      </tbody>
+                    </table>
                   </div>
-                  {% endif %}
-
-              
+                </div>
+              </div>
+              {% endif %}
+        
               {% if overdue_borrowings and overdue_borrowings|length > 0 %}
               <div class="table-responsive">
                 <table id="overdueTable" class="table table-bordered table-hover align-middle">
@@ -358,7 +356,6 @@
           </div>
         </div>
 
-        
       </div>
     </main>
   </div>
@@ -555,20 +552,29 @@ function buildExportFooter() {
   `;
 }
 
- async function printOverdueReport() {
-  const table = document.getElementById('overdueTable');
-  if (!table) return alert('No overdue records to print.');
+async function chooseOverduePrintOption() {
+  const choice = confirm("Do you want to print both the Overdue Summary and the Overdue List?\n\nClick 'OK' for both, 'Cancel' for summary only.");
+  await printOverdueReport(choice);
+}
+
+async function printOverdueReport(includeList = true) {
+  const summaryTable = document.getElementById('overdueSummaryTable');
+  const listTable = document.getElementById('overdueTable');
+
+  if (!summaryTable && !listTable) return alert('No overdue records to print.');
 
   const header = await buildExportHeader();
   const footer = buildExportFooter();
 
-  const title = `
+  let title = `
     <div style="text-align:center; margin:12px 0;">
-      <div style="font-weight:700; font-size:14px;">OVERDUE BORROWINGS LIST REPORT</div>
+      <div style="font-weight:700; font-size:14px;">OVERDUE REPORT</div>
+      <div style="font-size:12px;">${includeList ? 'Includes Overdue Summary and Borrowing List' : 'Overdue Summary Only'}</div>
     </div>
   `;
 
-  const tableClone = table.cloneNode(true);
+  const summaryClone = summaryTable ? summaryTable.cloneNode(true) : null;
+  const listClone = includeList && listTable ? listTable.cloneNode(true) : null;
 
   const style = `
     <style>
@@ -584,12 +590,17 @@ function buildExportFooter() {
     <html><head><title>Print</title>${style}</head><body>
       ${header}
       ${title}
-      ${tableClone.outerHTML}
+      ${summaryClone ? summaryClone.outerHTML : ''}
+      ${listClone ? `<br><h6 style="font-weight:700; text-align:center;">OVERDUE BORROWINGS LIST</h6>${listClone.outerHTML}` : ''}
       ${footer}
     </body></html>
   `);
+
   printWindow.document.close();
-  printWindow.onload = () => { printWindow.focus(); printWindow.print(); };
+  printWindow.onload = () => {
+    printWindow.focus();
+    printWindow.print();
+  };
 }
 
 
