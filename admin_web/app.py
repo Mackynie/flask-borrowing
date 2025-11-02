@@ -759,7 +759,7 @@ def generate_residents_report():
     return response
 
 
-@app.route('')
+@app.route('/history')
 def history_page():
     if not session.get('admin'):
         return redirect(url_for('login'))
