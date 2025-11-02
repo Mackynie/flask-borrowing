@@ -219,6 +219,7 @@
           <h5>Active Borrowings</h5>
           <div class="card shadow-sm mb-4">
             <div class="card-body">
+              {% if active_borrowings and active_borrowings|length > 0 %}
               <table class="table table-striped table-hover align-middle">
                 <thead class="table-light">
                   <tr>
@@ -227,14 +228,14 @@
                     <th>Quantity</th>
                     <th>Purpose</th>
                     <th>Request Date</th>
-                    <th>Borrow Date(From)</th>
+                    <th>Borrow Date (From)</th>
                     <th>Return Date (To)</th>
                     <th>Status</th>
                     <th>Action</th>
                   </tr>
                 </thead>
                 <tbody id="activeTableBody">
-                  {% for b in borrowings if b.status == 'Approved' or b.status == 'Return Requested' %}
+                  {% for b in active_borrowings %}
                   <tr>
                     <td>{{ b.resident_name }}</td>
                     <td>{{ b.item }}</td>
@@ -263,6 +264,9 @@
                   {% endfor %}
                 </tbody>
               </table>
+              {% else %}
+              <p class="text-muted">No active borrowings.</p>
+              {% endif %}
             </div>
           </div>
         </div>
