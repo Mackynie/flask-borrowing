@@ -1702,6 +1702,7 @@ def get_resident_history(full_name):
         return jsonify({"error": "Failed to fetch history"}), 500
 
 
+
 def run_daily_restriction():
     while True:
         now = datetime.now()
