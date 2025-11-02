@@ -28,6 +28,10 @@
     .export-only { display: none; }
     .screen-only { display: block; }
 
+    .modal-backdrop.show {
+        opacity: 0.6 !important; /* Softer dark overlay */
+      }
+
     @media print {
       body { padding: 20px; font-size: 14px; background: white; color: black; font-family: 'Segoe UI', sans-serif; }
       .sidebar, .btn, .form-control, select, .screen-only, .print-hide { display: none !important; }
@@ -348,23 +352,26 @@
                     </tr>
 
                     <!-- Overdue Print Option Modal -->
+                   <!-- Overdue Print Option Modal -->
                     <div class="modal fade" id="overduePrintModal" tabindex="-1" aria-labelledby="overduePrintModalLabel" aria-hidden="true">
                       <div class="modal-dialog modal-dialog-centered">
-                        <div class="modal-content border-0 shadow-sm">
-                          <div class="modal-header bg-warning">
-                            <h5 class="modal-title fw-bold" id="overduePrintModalLabel"><i class="bi bi-printer-fill me-2"></i>Print Overdue Report</h5>
-                            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                        <div class="modal-content border-0 shadow-lg" style="border-radius: 12px;">
+                          <div class="modal-header" style="background-color: #a10b0b; color: white;">
+                            <h5 class="modal-title fw-bold" id="overduePrintModalLabel">
+                              <i class="bi bi-printer-fill me-2"></i>Print Overdue Report
+                            </h5>
+                            <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
                           </div>
                           <div class="modal-body text-center">
-                            <p class="mb-3">Select what part of the overdue report you want to print:</p>
+                            <p class="mb-3 fw-semibold">Select what part of the overdue report you want to print:</p>
                             <div class="d-grid gap-2">
-                              <button class="btn btn-outline-dark" onclick="printOverdueReport('summary')" data-bs-dismiss="modal">
+                              <button class="btn text-dark fw-semibold border-0" style="background-color:#FFC100;" onclick="printOverdueReport('summary')" data-bs-dismiss="modal">
                                 <i class="bi bi-file-earmark-bar-graph me-1"></i> Overdue Summary Only
                               </button>
-                              <button class="btn btn-outline-dark" onclick="printOverdueReport('list')" data-bs-dismiss="modal">
+                              <button class="btn text-dark fw-semibold border-0" style="background-color:#FFD84D;" onclick="printOverdueReport('list')" data-bs-dismiss="modal">
                                 <i class="bi bi-list-ul me-1"></i> Overdue List Only
                               </button>
-                              <button class="btn btn-dark" onclick="printOverdueReport('both')" data-bs-dismiss="modal">
+                              <button class="btn fw-semibold text-white border-0" style="background-color:#a10b0b;" onclick="printOverdueReport('both')" data-bs-dismiss="modal">
                                 <i class="bi bi-collection me-1"></i> Both Summary & List
                               </button>
                             </div>
