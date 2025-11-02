@@ -116,6 +116,11 @@
             Account Restrictions
           </button>
         </li>
+        <li class="nav-item" role="presentation">
+          <button class="nav-link" id="overdue-tab" data-bs-toggle="tab" data-bs-target="#overdue" type="button" role="tab">
+            Overdue Borrowings
+          </button>
+        </li>
       </ul>
 
       <div class="tab-content" id="historyTabsContent">
@@ -274,6 +279,56 @@
           </div>
         </div>
 
+        <!-- Overdue Tab -->
+        <div class="tab-pane fade" id="overdue" role="tabpanel">
+          <div class="card shadow-sm mb-4" data-aos="fade-up">
+            <div class="card-body">
+              <div class="d-flex justify-content-between align-items-center mb-2">
+                <h5>Overdue Borrowings</h5>
+                <button class="btn btn-sm text-dark fw-semibold" 
+                        style="background-color:#ffc107; border:none;" 
+                        onclick="printOverdueReport()">
+                  <i class="bi bi-printer me-1"></i> Print
+                </button>
+              </div>
+        
+              {% if overdue_borrowings and overdue_borrowings|length > 0 %}
+              <div class="table-responsive">
+                <table id="overdueTable" class="table table-bordered table-hover align-middle">
+                  <thead class="table-light">
+                    <tr>
+                      <th>Resident</th>
+                      <th>Item</th>
+                      <th>Quantity</th>
+                      <th>Purpose</th>
+                      <th>Borrow Date</th>
+                      <th>Return Date</th>
+                      <th>Status</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {% for b in overdue_borrowings %}
+                    <tr>
+                      <td>{{ b.resident_name }}</td>
+                      <td>{{ b.item }}</td>
+                      <td>{{ b.quantity }}</td>
+                      <td>{{ b.purpose }}</td>
+                      <td>{{ b.borrow_date.strftime('%Y-%m-%d') if b.borrow_date else 'N/A' }}</td>
+                      <td class="text-danger fw-bold">{{ b.return_date.strftime('%Y-%m-%d') }}</td>
+                      <td><span class="badge bg-danger">Overdue</span></td>
+                    </tr>
+                    {% endfor %}
+                  </tbody>
+                </table>
+              </div>
+              {% else %}
+              <p class="text-muted">No overdue borrowings.</p>
+              {% endif %}
+            </div>
+          </div>
+        </div>
+
+        
       </div>
     </main>
   </div>
@@ -453,7 +508,43 @@ function buildExportFooter() {
   `;
 }
 
- 
+ async function printOverdueReport() {
+  const table = document.getElementById('overdueTable');
+  if (!table) return alert('No overdue records to print.');
+
+  const header = await buildExportHeader();
+  const footer = buildExportFooter();
+
+  const title = `
+    <div style="text-align:center; margin:12px 0;">
+      <div style="font-weight:700; font-size:14px;">OVERDUE BORROWINGS LIST REPORT</div>
+    </div>
+  `;
+
+  const tableClone = table.cloneNode(true);
+
+  const style = `
+    <style>
+      body { font-family: Arial, sans-serif; padding: 20px; color: #000; }
+      table { border-collapse: collapse; width: 100%; margin-top: 8px; }
+      th, td { border: 0.5px solid black; padding: 4px; text-align: center; font-size: 12px; }
+      th { font-weight: bold; background: #f8f9fa; }
+    </style>
+  `;
+
+  const printWindow = window.open('', '_blank', 'width=800,height=600');
+  printWindow.document.write(`
+    <html><head><title>Print</title>${style}</head><body>
+      ${header}
+      ${title}
+      ${tableClone.outerHTML}
+      ${footer}
+    </body></html>
+  `);
+  printWindow.document.close();
+  printWindow.onload = () => { printWindow.focus(); printWindow.print(); };
+}
+
 
 async function printRestrictions() {
   const rows = document.querySelectorAll('#restrictionsTable tbody tr.export-visible');
