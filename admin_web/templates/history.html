@@ -79,7 +79,7 @@
 
     <!-- Main Content -->
     <main class="col-md-10 ms-sm-auto px-4 mt-4">
-      <h1 class="fw-bold mb-4 print-hide">History</h1>
+      <h1 class="fw-bold mb-4 print-hide">Reports</h1>
 
       <!-- Filters -->
       <div class="screen-only d-flex flex-wrap justify-content-between align-items-center mb-3">
@@ -416,18 +416,31 @@ async function buildExportHeader() {
 }
 
 function buildReportTitle() {
-  const { search, date, status, type } = getFilterInfo();
+  const { search, date, status } = getFilterInfo();
+
+  // Determine report title
+  let reportTitle = "Borrowing and Reservation Transaction Report";
+  if (currentTypeFilter === 'Borrowing') {
+    reportTitle = "Borrowing Transaction Report";
+  } else if (currentTypeFilter === 'Reservation') {
+    reportTitle = "Reservation Transaction Report";
+  }
+
+  // Build applied filter text
   let appliedFilters = [];
-  if (type !== 'All') appliedFilters.push(`Type: ${type}`);
-  if (date !== 'All') appliedFilters.push(`Date: ${date}`);
-  if (status !== 'All') appliedFilters.push(`Status: ${status}`);
-  if (search !== 'All') appliedFilters.push(`Search: ${search}`);
+  if (date) appliedFilters.push(`Date: ${date}`);
+  if (status) appliedFilters.push(`Status: ${status}`);
+  if (search) appliedFilters.push(`Search: ${search}`);
   const filterText = appliedFilters.length ? `Filtered to: ${appliedFilters.join(', ')}` : 'No filters applied';
-  return `<div style="text-align:center; margin:12px 0;">
-    <div style="font-weight:700; font-size:14px;">HISTORY REPORT</div>
-    <div style="font-size:12px;">${filterText}</div>
-  </div>`;
+
+  return `
+    <div style="text-align:center; margin:12px 0;">
+      <div style="font-weight:700; font-size:14px;">${reportTitle}</div>
+      <div style="font-size:12px;">${filterText}</div>
+    </div>
+  `;
 }
+
 
 function buildExportFooter() {
   const today = new Date().toLocaleDateString();
@@ -440,39 +453,7 @@ function buildExportFooter() {
   `;
 }
 
-  async function exportRestrictionsToPDF() {
-  const rows = document.querySelectorAll('#restrictionsTable tbody tr.export-visible');
-  if (!rows.length) return alert('No visible records to export.');
-
-  const header = await buildExportHeader();
-  const tableClone = document.getElementById('restrictionsTable').cloneNode(true);
-  const tbody = tableClone.querySelector('tbody');
-  Array.from(tbody.rows).forEach(r => { if (!r.classList.contains('export-visible')) tbody.removeChild(r); });
-
-  tableClone.style.borderCollapse = 'collapse';
-  tableClone.querySelectorAll('th,td').forEach(c => {
-    c.style.border = '0.5px solid black';
-    c.style.padding = '4px';
-    c.style.textAlign = 'center';
-    c.style.fontSize = '12px';
-  });
-  tableClone.querySelectorAll('th').forEach(c => c.style.fontWeight = 'bold');
-
-  const container = document.createElement('div');
-  container.innerHTML = header + `<div style="text-align:center; margin:12px 0; font-weight:700; font-size:14px;">ACCOUNT RESTRICTIONS REPORT</div>`;
-  container.appendChild(tableClone);
-  const footer = document.createElement('div');
-  footer.innerHTML = buildExportFooter();
-  container.appendChild(footer);
-
-  html2pdf().from(container).set({
-    margin: [0.5, 0.5, 0.5, 0.5],
-    filename: 'BARMA-Restrictions-Report.pdf',
-    image: { type: 'jpeg', quality: 1 },
-    html2canvas: { scale: 2 },
-    jsPDF: { unit: 'in', format: 'letter', orientation: 'portrait' }
-  }).save();
-}
+ 
 
 async function printRestrictions() {
   const rows = document.querySelectorAll('#restrictionsTable tbody tr.export-visible');
@@ -516,39 +497,6 @@ async function printRestrictions() {
   };
 }
 
-async function exportFilteredToPDF() {
-  const rows = document.querySelectorAll('#historyTable tbody tr.export-visible');
-  if (!rows.length) return alert('No visible records to export.');
-  
-  const header = await buildExportHeader();
-  const tableClone = document.getElementById('historyTable').cloneNode(true);
-  const tbody = tableClone.querySelector('tbody');
-  Array.from(tbody.rows).forEach(r => { if (!r.classList.contains('export-visible')) tbody.removeChild(r); });
-
-  tableClone.style.borderCollapse = 'collapse';
-  tableClone.querySelectorAll('th,td').forEach(c => {
-    c.style.border = '0.5px solid black';
-    c.style.padding = '4px';
-    c.style.textAlign = 'center';
-    c.style.fontSize = '12px';
-  });
-  tableClone.querySelectorAll('th').forEach(c => c.style.fontWeight = 'bold');
-
-  const container = document.createElement('div');
-  container.innerHTML = header + buildReportTitle();
-  container.appendChild(tableClone);
-  const footer = document.createElement('div');
-  footer.innerHTML = buildExportFooter();
-  container.appendChild(footer);
-
-  html2pdf().from(container).set({
-    margin: [0.5, 0.5, 0.5, 0.5],
-    filename: 'BARMA-History-Report.pdf',
-    image: { type: 'jpeg', quality: 1 },
-    html2canvas: { scale: 2 },
-    jsPDF: { unit: 'in', format: 'letter', orientation: 'portrait' }
-  }).save();
-}
 
 async function printReport() {
   const rows = document.querySelectorAll('#historyTable tbody tr.export-visible');
