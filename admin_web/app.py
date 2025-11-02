@@ -984,34 +984,28 @@ def login_resident():
 
     resident = Resident.query.filter_by(username=username).first()
 
-    if resident:
-        print("Resident found:", resident.username)
-        print("DB hashed password:", resident.password)
-        print("Entered password:", password)
-        print("Password check:", check_password_hash(resident.password, password))
-
-        if resident.is_restricted:
-            print("❌ Account is restricted")
-            return jsonify({'error': 'Your account is restricted'}), 403
-
-        if not resident.is_verified:
-            print("❌ Account not yet verified")
-            return jsonify({'error': 'Your account is not yet verified by the admin.'}), 403
-
-        if check_password_hash(resident.password, password):
-            return jsonify({
-                'message': 'Login successful',
-                'resident_id': resident.id,
-                'name': resident.full_name
-            })
-
-        else:
-            print("❌ Incorrect password")
-    else:
+    if not resident:
         print("❌ Username not found")
+        return jsonify({'error': 'Invalid username or password'}), 401
 
-    return jsonify({'error': 'Invalid credentials'}), 401
+    # Password check
+    if not check_password_hash(resident.password, password):
+        print("❌ Incorrect password")
+        return jsonify({'error': 'Invalid username or password'}), 401
 
+    # Account verification check
+    if not resident.is_verified:
+        print("❌ Account not yet verified")
+        return jsonify({'error': 'Your account is not yet verified by the admin.'}), 403
+
+    # ✅ Allow restricted accounts to log in, but flag them
+    print(f"✅ Login success — Restricted: {resident.is_restricted}")
+    return jsonify({
+        'message': 'Login successful',
+        'resident_id': resident.id,
+        'name': resident.full_name,
+        'is_restricted': resident.is_restricted
+    }), 200
 
 
 @app.route('/api/assets', methods=['GET'])
