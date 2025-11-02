@@ -759,6 +759,10 @@ def generate_residents_report():
     response.headers["Content-Type"] = "text/csv"
     return response
 
+from datetime import datetime
+from collections import Counter
+from flask import render_template, redirect, url_for, session
+
 @app.route('/history')
 def history_page():
     if not session.get('admin'):
@@ -769,12 +773,18 @@ def history_page():
                                    .order_by(History.action_date.desc())\
                                    .all()
 
-    # Other history logs
+    # Other history logs (Borrowing, Reservation, etc.)
     other_logs = History.query.filter(History.type != 'Account Restriction')\
                               .order_by(History.action_date.desc())\
                               .all()
 
-    # Summary: count only actual restriction actions
+    # Overdue Borrowings: Approved borrowings past their return date
+    overdue_borrowings = Borrowing.query.filter(
+        Borrowing.status == 'Approved',
+        Borrowing.return_date < datetime.utcnow()
+    ).order_by(Borrowing.return_date.asc()).all()
+
+    # Restriction summary
     restriction_summary = Counter([
         r.resident_name
         for r in restriction_logs
@@ -788,8 +798,10 @@ def history_page():
         restriction_logs=restriction_logs,
         other_logs=other_logs,
         restriction_summary=restriction_summary,
+        overdue_borrowings=overdue_borrowings,
         username=admin.full_name
     )
+
 
 
 
