@@ -764,23 +764,27 @@ def history_page():
     if not session.get('admin'):
         return redirect(url_for('login'))
 
+    # ✅ Get restriction logs
     restriction_logs = History.query.filter_by(type='Account Restriction')\
                                    .order_by(History.action_date.desc())\
                                    .all()
 
+    # ✅ Exclude Overdue entries from Borrowing/Reservation tab
     other_logs = History.query.filter(
         History.type != 'Account Restriction',
         History.action_type != 'Overdue'
     ).order_by(History.action_date.desc()).all()
 
-    # ✅ Use Philippine time to detect overdue borrowings correctly
+    # ✅ Use Philippine time for accurate overdue detection
     today_ph = datetime.now(PH_TZ).date()
 
+    # ✅ Find overdue borrowings
     overdue_borrowings = Borrowing.query.filter(
         Borrowing.status == 'Approved',
         func.date(Borrowing.return_date) < today_ph
     ).all()
 
+    # ✅ Log new overdue borrowings into History table if not yet logged
     for b in overdue_borrowings:
         already_logged = History.query.filter_by(
             type='Borrowing',
@@ -806,14 +810,22 @@ def history_page():
 
     db.session.commit()
 
+    # ✅ Fetch all overdue history logs
     overdue_history = History.query.filter_by(action_type='Overdue')\
                                    .order_by(History.action_date.desc())\
                                    .all()
 
+    # ✅ Restriction summary
     restriction_summary = Counter([
         r.resident_name
         for r in restriction_logs
         if r.action_type in ['Automatically Restricted', 'Manually Restricted']
+    ])
+
+    # ✅ Overdue summary
+    overdue_summary = Counter([
+        h.resident_name
+        for h in overdue_history
     ])
 
     admin = Admin.query.get(session['admin_id'])
@@ -824,8 +836,10 @@ def history_page():
         other_logs=other_logs,
         restriction_summary=restriction_summary,
         overdue_borrowings=overdue_history,
+        overdue_summary=overdue_summary,   # ✅ Pass summary to template
         username=admin.full_name
     )
+
 
 
 @app.route('/return_borrowing/<int:borrowing_id>', methods=['POST'])
