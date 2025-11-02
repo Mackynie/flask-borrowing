@@ -383,13 +383,11 @@ def dashboard():
         'dashboard.html',
         assets=assets,
         reservations=reservations,
-        borrowings=active_borrowings,      # only active shown in Active tab
+        borrowings=borrowings,              # 🟩 now includes all (Pending, Approved, etc.)
+        active_borrowings=active_borrowings, # for the Active tab
         overdue_borrowings=overdue_borrowings,
         residents=residents
     )
-
-
-
 
 @app.route('/add_asset', methods=['POST'])
 def add_asset():
