@@ -759,7 +759,7 @@ def generate_residents_report():
     return response
 
 
-@app.route('/history')
+@app.route('')
 def history_page():
     if not session.get('admin'):
         return redirect(url_for('login'))
@@ -1689,11 +1689,20 @@ def get_resident_history(full_name):
 
         history = [
             {
-                "action": f"{entry.type} - {entry.action_type} ({entry.item})",
-                "timestamp": entry.action_date.strftime('%Y-%m-%d %H:%M:%S')
+                "type": entry.type,
+                "actionType": entry.action_type,
+                "residentName": entry.resident_name,
+                "item": entry.item,
+                "quantity": entry.quantity,
+                "purpose": entry.purpose,
+                "borrowDate": entry.borrow_date.isoformat() if entry.borrow_date else None,
+                "returnDate": entry.return_date.isoformat() if entry.return_date else None,
+                "actionDate": entry.action_date.isoformat(),
+                "reason": entry.reason or ""
             }
             for entry in history_entries
         ]
+
 
         return jsonify(history)
 
