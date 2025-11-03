@@ -80,13 +80,9 @@
           </button>
 
           <!-- ✅ Column Filter Dropdown -->
-          <select id="columnFilter" class="form-select form-select-sm ms-2" style="width:auto;">
-            <option value="all">All Columns</option>
-            <option value="hideBorrowedAvailable">Total Quantity List</option>
-            <option value="hideTotalAvailable">Active Borrowed List</option>
-            <option value="hideTotalBorrowed">Available Quantity List</option>
-            <option value="hideDamaged">Damaged Assets List</option>
-          </select>
+         <button class="btn btn-sm btn-outline-dark ms-2" data-bs-toggle="modal" data-bs-target="#printModal">
+            <i class="bi bi-funnel me-1"></i> Print Options
+          </button>
         </div>
       </div>
 
@@ -264,6 +260,38 @@
     </div>
   </div>
 </div>
+
+  <!-- 🖨️ Print Options Modal -->
+<div class="modal fade" id="printModal" tabindex="-1">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content">
+      <div class="modal-header bg-warning">
+        <h5 class="modal-title text-dark"><i class="bi bi-printer me-1"></i> Print Options</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body">
+        <div class="list-group">
+          <button class="list-group-item list-group-item-action" onclick="setPrintFilter('all')" data-bs-dismiss="modal">
+            All Columns
+          </button>
+          <button class="list-group-item list-group-item-action" onclick="setPrintFilter('hideBorrowedAvailable')" data-bs-dismiss="modal">
+            Total Quantity List
+          </button>
+          <button class="list-group-item list-group-item-action" onclick="setPrintFilter('hideTotalAvailable')" data-bs-dismiss="modal">
+            Active Borrowed List
+          </button>
+          <button class="list-group-item list-group-item-action" onclick="setPrintFilter('hideTotalBorrowed')" data-bs-dismiss="modal">
+            Available Quantity List
+          </button>
+          <button class="list-group-item list-group-item-action" onclick="setPrintFilter('hideDamaged')" data-bs-dismiss="modal">
+            Damaged Assets List
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
 
 <!-- Scripts -->
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
@@ -480,7 +508,7 @@ function buildExportFooter() {
 
 // ✅ Print Report
 async function printReport() {
-  const selectedFilter = document.getElementById('columnFilter').value;
+  const selectedFilter = getSelectedFilter();
   const filterTextMap = {
     'all': 'All Columns',
     'hideBorrowedAvailable': 'Total Quantity List',
@@ -592,6 +620,17 @@ async function exportFilteredToPDF() {
     jsPDF: { unit: 'in', format: 'letter', orientation: 'portrait' }
   }).save();
 }
+  let selectedPrintFilter = 'all';
+
+function setPrintFilter(filter) {
+  selectedPrintFilter = filter;
+  printReport(); // Call your existing printReport() with modal selection
+}
+
+function getSelectedFilter() {
+  return selectedPrintFilter;
+}
+
 </script>
 </body>
 </html>
