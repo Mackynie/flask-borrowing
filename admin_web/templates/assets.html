@@ -548,9 +548,16 @@ async function printReport() {
   `;
 
   const reportTitle = `
-    <h2 style="text-align:center; font-weight:700; margin:10px 0 5px 0; font-family:Arial;">
+    <div style="
+      text-align: center;
+      font-weight: 700;
+      font-size: 16px;
+      letter-spacing: 0.5px;
+      margin: 6px 0 4px 0;
+      font-family: Arial, sans-serif;
+    ">
       ${reportTitleText}
-    </h2>
+    </div>
   `;
 
   const style = `
@@ -559,6 +566,7 @@ async function printReport() {
       table { border-collapse: collapse; width: 100%; }
       th, td { border: 0.5px solid black; padding: 4px; font-size: 12px; text-align: center; }
       th { font-weight: bold; background-color: #f2f2f2; }
+      td:nth-child(5) { color: red; font-weight: bold; } /* highlight damaged column */
     </style>
   `;
 
@@ -577,6 +585,15 @@ async function printReport() {
   `);
   win.document.close();
   win.onload = () => { win.focus(); win.print(); };
+}
+
+let selectedFilter = 'all';
+function setPrintFilter(filter) {
+  selectedFilter = filter;
+  printReport();
+}
+function getSelectedFilter() {
+  return selectedFilter;
 }
 
 // ✅ PDF Export
