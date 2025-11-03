@@ -116,8 +116,7 @@
                 <td>{{ asset.quantity }}</td>
                 <td>{{ available_assets if available_assets > 0 else 0 }}</td>
                 <td>{{ active_borrowed }}</td>
-                <td class="{% if asset.damaged and asset.damaged > 0 %}text-danger fw-bold{% endif %}">
-                  {{ asset.damaged if asset.damaged is not none else 0 }}
+                <td class= {{ asset.damaged if asset.damaged is not none else 0 }}
                 </td>
                 <td>{{ asset.classification }}</td>
                 <td>
