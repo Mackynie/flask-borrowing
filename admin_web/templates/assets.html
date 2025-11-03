@@ -75,9 +75,10 @@
           <input type="text" id="searchInput" class="form-control border-start-0" placeholder="Search assets...">
         </div>
         <div class="btn-group">
-          <button class="btn btn-sm text-dark" style="background-color: #FFC100;" onclick="printReport()">
-            <i class="bi bi-printer me-1"></i> Print
-          </button>
+         <button class="btn btn-sm text-dark" style="background-color: #FFC100;" data-bs-toggle="modal" data-bs-target="#printModal">
+          <i class="bi bi-printer me-1"></i> Print
+        </button>
+
 
           <!-- ✅ Column Filter Dropdown -->
           <select id="columnFilter" class="form-select form-select-sm ms-2" style="width:auto;">
@@ -480,7 +481,7 @@ function buildExportFooter() {
 
 // ✅ Print Report
 async function printReport() {
-  const selectedFilter = document.getElementById('columnFilter').value;
+  function printReport(selectedFilter = 'all') {
   const filterTextMap = {
     'all': 'All Columns',
     'hideBorrowedAvailable': 'Total Quantity List',
@@ -593,5 +594,37 @@ async function exportFilteredToPDF() {
   }).save();
 }
 </script>
+  <!-- 🖨️ Print Options Modal -->
+<div class="modal fade" id="printModal" tabindex="-1" aria-labelledby="printModalLabel" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="printModalLabel">Select Print Option</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body">
+        <p class="text-muted">Choose which type of report you want to print:</p>
+        <div class="list-group">
+          <button class="list-group-item list-group-item-action" onclick="printReport('all')" data-bs-dismiss="modal">
+            <i class="bi bi-list-ul me-2"></i> All Columns
+          </button>
+          <button class="list-group-item list-group-item-action" onclick="printReport('hideBorrowedAvailable')" data-bs-dismiss="modal">
+            <i class="bi bi-box2-fill me-2"></i> Total Quantity List
+          </button>
+          <button class="list-group-item list-group-item-action" onclick="printReport('hideTotalAvailable')" data-bs-dismiss="modal">
+            <i class="bi bi-arrow-repeat me-2"></i> Active Borrowed List
+          </button>
+          <button class="list-group-item list-group-item-action" onclick="printReport('hideTotalBorrowed')" data-bs-dismiss="modal">
+            <i class="bi bi-boxes me-2"></i> Available Quantity List
+          </button>
+          <button class="list-group-item list-group-item-action" onclick="printReport('hideDamaged')" data-bs-dismiss="modal">
+            <i class="bi bi-exclamation-triangle-fill text-danger me-2"></i> Damaged Assets List
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
 </body>
 </html>
