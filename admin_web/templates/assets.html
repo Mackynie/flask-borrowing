@@ -75,19 +75,16 @@
           <input type="text" id="searchInput" class="form-control border-start-0" placeholder="Search assets...">
         </div>
         <div class="btn-group">
-         <button class="btn btn-sm text-dark" style="background-color: #FFC100;" data-bs-toggle="modal" data-bs-target="#printModal">
-          <i class="bi bi-printer me-1"></i> Print
-        </button>
+          <button class="btn btn-sm text-dark" style="background-color: #FFC100;" onclick="printReport()">
+            <i class="bi bi-printer me-1"></i> Print
+          </button>
 
 
           <!-- ✅ Column Filter Dropdown -->
-          <select id="columnFilter" class="form-select form-select-sm ms-2" style="width:auto;">
-            <option value="all">All Columns</option>
-            <option value="hideBorrowedAvailable">Total Quantity List</option>
-            <option value="hideTotalAvailable">Active Borrowed List</option>
-            <option value="hideTotalBorrowed">Available Quantity List</option>
-            <option value="hideDamaged">Damaged Assets List</option>
-          </select>
+         <button class="btn btn-sm btn-outline-secondary ms-2" data-bs-toggle="modal" data-bs-target="#printModal">
+            <i class="bi bi-funnel me-1"></i> Print Options
+          </button>
+
         </div>
       </div>
 
