@@ -502,6 +502,7 @@ function buildExportFooter() {
 
 
 // ✅ Print Report
+// ✅ Print Report
 async function printReport() {
   const selectedFilter = getSelectedFilter();
   const filterTextMap = {
@@ -533,10 +534,15 @@ async function printReport() {
   tableClone.querySelectorAll('thead th:last-child, tbody td:last-child').forEach(el => el.remove());
   applyColumnFilter(tableClone, selectedFilter);
 
-  // ✅ Change title & label dynamically
-  const reportTitleText = borrowingFilterActive
-    ? 'BORROWABLE ASSETS REPORT'
-    : 'ASSETS REPORT';
+  // ✅ Dynamic report title based on filter
+  let reportTitleText = 'ASSETS REPORT';
+  if (borrowingFilterActive) {
+    reportTitleText = 'BORROWABLE ASSETS REPORT';
+  } else if (selectedFilter === 'all') {
+    reportTitleText = 'ASSET INVENTORY REPORT';
+  }
+
+  // ✅ Dynamic filter text
   const filterUsedText = borrowingFilterActive
     ? 'Borrowing (Equipment) Only'
     : filterText;
@@ -566,7 +572,7 @@ async function printReport() {
       table { border-collapse: collapse; width: 100%; }
       th, td { border: 0.5px solid black; padding: 4px; font-size: 12px; text-align: center; }
       th { font-weight: bold; background-color: #f2f2f2; }
-      td:nth-child(5) { color: red; font-weight: bold; } /* highlight damaged column */
+      td:nth-child(5) { color: red; font-weight: bold; }
     </style>
   `;
 
