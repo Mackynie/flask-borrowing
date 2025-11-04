@@ -1614,19 +1614,26 @@ def approve_return(borrow_id):
         # ✅ Update borrowing status
         borrowing.status = 'Returned'
 
-        # ✅ Add to History (like in reject route)
+        # ✅ Pick correct borrow and return dates
+        borrow_dt = borrowing.borrow_date or borrowing.request_date
+        return_dt = borrowing.return_date or datetime.now(PH_TZ)
+
+        # ✅ Add full entry to History (so report shows correct dates)
         history = History(
             type='Borrowing',
             resident_name=borrowing.resident_name,
             item=borrowing.item,
             quantity=borrowing.quantity,
             purpose=borrowing.purpose,
-            action_type='Returned'  # you can customize message here too
-            # action_date=datetime.utcnow()  # optional if your model has default
+            action_type='Returned',
+            action_date=datetime.now(PH_TZ),
+            borrow_date=borrow_dt,     # 👈 ensures Borrow Date appears
+            return_date=return_dt,     # 👈 ensures Return Date appears
+            reason='Item returned and approved by admin.'
         )
 
         db.session.add(history)
-        db.session.commit()  # commit both status + history
+        db.session.commit()
 
         flash('Return approved successfully.', 'success')
 
@@ -1642,6 +1649,7 @@ def approve_return(borrow_id):
         flash('Cannot approve return. Status must be "Return Requested".', 'warning')
 
     return redirect(url_for('dashboard'))
+
 
 
 @app.route('/api/account/<string:full_name>', methods=['GET'])
