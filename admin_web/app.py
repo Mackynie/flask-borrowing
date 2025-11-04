@@ -865,12 +865,27 @@ def return_borrowing(borrowing_id):
     if borrowing.status.lower() == "approved": 
         borrowing.status = "Returned"
 
-        # Log activity
+        # ✅ Log to AdminActivity
         new_activity = AdminActivity(
             admin_id=admin_id,
             action=f"Marked borrowing as returned: {borrowing.resident_name} ({borrowing.item}, Qty: {borrowing.quantity})"
         )
         db.session.add(new_activity)
+
+        # ✅ Add this block — log to History table as well
+        new_history = History(
+            type='Borrowing',
+            resident_name=borrowing.resident_name,
+            item=borrowing.item,
+            quantity=borrowing.quantity,
+            purpose=borrowing.purpose,
+            action_type='Returned',
+            action_date=datetime.now(PH_TZ),
+            borrow_date=borrowing.request_date,   # ✅ Ensures Borrow Date appears in report
+            return_date=borrowing.return_date,    # ✅ Ensures Return Date appears in report
+            reason='Item successfully returned.'
+        )
+        db.session.add(new_history)
 
         db.session.commit() 
         flash('Item marked as returned.', 'success')
