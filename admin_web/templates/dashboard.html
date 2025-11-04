@@ -195,7 +195,7 @@
                     <td>{{ b.item }}</td>
                     <td>{{ b.quantity }}</td>
                     <td>{{ b.purpose }}</td>
-                    <td>{{ b.request_date.strftime('%Y-%m-%d %I:%M %p') }}</td>
+                    <td>{{ b.request_date.strftime('%Y-%m-%d') }}</td>
                     <td>{{ b.borrow_date.strftime('%Y-%m-%d') if b.borrow_date else 'N/A' }}</td>
                     <td>{{ b.return_date.strftime('%Y-%m-%d') }}</td>
                     <td><span class="badge bg-warning text-dark">{{ b.status }}</span></td>
@@ -241,7 +241,7 @@
                     <td>{{ b.item }}</td>
                     <td>{{ b.quantity }}</td>
                     <td>{{ b.purpose }}</td>
-                    <td>{{ b.request_date.strftime('%Y-%m-%d %I:%M %p') }}</td>
+                    <td>{{ b.request_date.strftime('%Y-%m-%d') }}</td>
                     <td>{{ b.borrow_date.strftime('%Y-%m-%d') if b.borrow_date else 'N/A' }}</td>
                     <td>{{ b.return_date.strftime('%Y-%m-%d') }}</td>
                     <td>
