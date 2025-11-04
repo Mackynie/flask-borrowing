@@ -1608,17 +1608,18 @@ def approve_return(borrow_id):
     if not session.get('admin'):
         return redirect(url_for('login'))
 
+    admin_id = session.get('admin_id')
     borrowing = Borrowing.query.get_or_404(borrow_id)
 
     if borrowing.status == 'Return Requested':
         # ✅ Update borrowing status
         borrowing.status = 'Returned'
 
-        # ✅ Pick correct borrow and return dates
+        # ✅ Capture borrow/return dates (fallbacks included)
         borrow_dt = borrowing.borrow_date or borrowing.request_date
         return_dt = borrowing.return_date or datetime.now(PH_TZ)
 
-        # ✅ Add full entry to History (so report shows correct dates)
+        # ✅ Log to History table (for reports)
         history = History(
             type='Borrowing',
             resident_name=borrowing.resident_name,
@@ -1627,11 +1628,20 @@ def approve_return(borrow_id):
             purpose=borrowing.purpose,
             action_type='Returned',
             action_date=datetime.now(PH_TZ),
-            borrow_date=borrow_dt,     # 👈 ensures Borrow Date appears
-            return_date=return_dt,     # 👈 ensures Return Date appears
+            borrow_date=borrow_dt,
+            return_date=return_dt,
+            reason='Item returned and approved by admin.'
         )
-
         db.session.add(history)
+
+        # ✅ Log to AdminActivity table (for audit trail)
+        new_activity = AdminActivity(
+            admin_id=admin_id,
+            action=f"Approved return for {borrowing.resident_name} "
+                   f"({borrowing.item}, Qty: {borrowing.quantity})"
+        )
+        db.session.add(new_activity)
+
         db.session.commit()
 
         flash('Return approved successfully.', 'success')
