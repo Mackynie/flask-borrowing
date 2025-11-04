@@ -781,19 +781,24 @@ def history_page():
     today_ph = datetime.now(PH_TZ).date()
 
     # ✅ Find overdue borrowings
+    # ✅ Find all borrowings that are overdue (not yet returned)
     overdue_borrowings = Borrowing.query.filter(
-        Borrowing.status == 'Approved',
-        func.date(Borrowing.return_date) < today_ph
+        func.date(Borrowing.return_date) < today_ph,
+        Borrowing.status.notin_(['Returned', 'Rejected'])
     ).all()
+
 
     # ✅ Log new overdue borrowings into History table if not yet logged
     for b in overdue_borrowings:
         already_logged = History.query.filter_by(
-            type='Borrowing',
-            resident_name=b.resident_name,
-            item=b.item,
-            action_type='Overdue'
-        ).first()
+        type='Borrowing',
+        resident_name=b.resident_name,
+        item=b.item,
+        action_type='Overdue'
+    ).filter(
+        func.date(History.return_date) == func.date(b.return_date)
+    ).first()
+
 
         if not already_logged:
             new_history = History(
