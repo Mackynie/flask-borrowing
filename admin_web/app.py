@@ -1629,7 +1629,6 @@ def approve_return(borrow_id):
             action_date=datetime.now(PH_TZ),
             borrow_date=borrow_dt,     # 👈 ensures Borrow Date appears
             return_date=return_dt,     # 👈 ensures Return Date appears
-            reason='Item returned and approved by admin.'
         )
 
         db.session.add(history)
