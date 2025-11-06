@@ -549,11 +549,36 @@ function buildReportTitle() {
 
 function buildExportFooter() {
   const today = new Date().toLocaleDateString();
-  const printedBy = "{{ username }}";
+  const printedBy = "{{ admin_name }}";
+
   return `
-    <div style="font-size:12px; margin-top:12px; display:flex; justify-content:space-between;">
-      <div>Print date: ${today}</div>
-      <div>Printed by: ${printedBy}</div>
+    <div style="
+      font-size:12px;
+      margin-top:24px;
+      line-height:1.4;
+      width:100%;
+      position:relative;
+      display:flex;
+      flex-direction:column;
+    ">
+      <!-- ✅ Print Date (Left-aligned) -->
+      <div style="text-align:left;">
+        Print date: ${today}
+      </div>
+
+      <!-- ✅ Printed by (Centered with signature space) -->
+      <div style="
+        margin-top:5px;
+        text-align:center;
+      ">
+        <div style="margin-bottom:5px;">&nbsp;</div> <!-- signature space -->
+        <span style="
+          display:inline-block;
+          min-width:180px;
+        ">
+          Printed by: ${printedBy}
+        </span>
+      </div>
     </div>
   `;
 }
