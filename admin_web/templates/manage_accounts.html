@@ -311,7 +311,7 @@ function printResidentsReport() {
     </style>
   `;
   const win = window.open('', '', 'width=900,height=650');
-  win.document.write(`<html><head><title>Residents Report</title>${style}</head><body>${headerHTML}${tableClone.outerHTML}${footerHTML}</body></html>`);
+  win.document.write(`<html><head><title>Residents Report</title>${style}</head><body>${headerHTML}${reportTitle}${tableClone.outerHTML}${footerHTML}</body></html>`);
   win.document.close();
   win.onload = () => { win.focus(); win.print(); };
 }
