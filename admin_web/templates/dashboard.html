@@ -409,9 +409,9 @@ function buildOverdueTitle() {
 function buildOverdueFooter() {
   const today = new Date().toLocaleDateString();
   return `
-  <div style="font-size:12px; margin-top:8px; display:flex; justify-content: space-between;">
-    <span>Print date: ${today}</span>
-    <span>Printed by: {{ admin_name }}</span>
+  <div style="font-size:12px; margin-top:24px; text-align:center;">
+    <div>Print date: ${today}</div>
+    <div style="margin-top:6px;">Printed by: {{ admin_name }}</div>
   </div>`;
 }
 
@@ -437,7 +437,12 @@ async function printOverdueReport() {
     table { width: 100%; border-collapse: collapse; margin-top: 10px; }
     th, td { border: 0.5px solid black; padding: 4px; text-align: center; font-size: 12px; }
     th { font-weight: bold; background: #f8f9fa; }
-    .footer { display:flex; justify-content:space-between; font-size:12px; margin-top:8px; }
+    .footer { 
+        font-size:12px; 
+        text-align:center; 
+        margin-top:24px;  /* adds ~2 line spaces */
+      }
+
   </style>`;
 
   const win = window.open('', '', 'width=800,height=600');
