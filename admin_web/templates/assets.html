@@ -496,23 +496,30 @@ function buildExportFooter() {
       font-size:12px;
       margin-top:24px;
       line-height:1.4;
+      width:100%;
+      position:relative;
       display:flex;
-      justify-content:space-between;
-      align-items:flex-start;
+      flex-direction:column;
     ">
-      <!-- ✅ Print Date (left side, no extra space) -->
+      <!-- ✅ Print Date (Left-aligned) -->
       <div style="text-align:left;">
         Print date: ${today}
       </div>
 
-      <!-- ✅ Printed by with signature space above -->
-      <div style="text-align:right; flex:1; margin-left:50px;">
+      <!-- ✅ Printed by (Centered with signature space) -->
+      <div style="
+        margin-top:40px;
+        text-align:center;
+      ">
         <div style="margin-bottom:40px;">&nbsp;</div> <!-- signature space -->
-        Printed by: ${printedBy}
+        <span style="border-top:1px solid #000; padding-top:3px; display:inline-block; min-width:180px;">
+          Printed by: ${printedBy}
+        </span>
       </div>
     </div>
   `;
 }
+
 
 
 
@@ -569,18 +576,19 @@ async function printReport() {
     </div>
   `;
 
-  const reportTitle = `
+ const reportTitle = `
     <div style="
       text-align: center;
       font-weight: 700;
       font-size: 16px;
       letter-spacing: 0.5px;
-      margin: 6px 0 4px 0;
+      margin: 6px 0 12px 0; /* extra space below title */
       font-family: Arial, sans-serif;
     ">
       ${reportTitleText}
     </div>
   `;
+
 
   const style = `
     <style>
