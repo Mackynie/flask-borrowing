@@ -113,6 +113,7 @@
                 <td>{{ available }}</td>
                 <td>{{ approved_borrowed }}</td>
                 <td>{{ damaged }}</td>
+                {% set damaged = asset.damaged if asset.damaged is not none else 0 %}
               </tr>
               {% endfor %}
             </tbody>
