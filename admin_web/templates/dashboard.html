@@ -116,9 +116,7 @@
                 <td>{{ asset.quantity }}</td>
                 <td>{{ available if available > 0 else 0 }}</td>
                 <td>{{ approved_borrowed }}</td>
-                <td class="{% if damaged > 0 %}text-danger fw-bold{% endif %}">
-                  {{ damaged }}
-                </td>
+                <td>{{ damaged }}</td> 
               </tr>
             {% else %}
               <tr>
