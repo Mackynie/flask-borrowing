@@ -105,17 +105,27 @@
             </thead>
             <tbody>
               {% for asset in assets if asset.classification == 'Borrowing' %}
-              {% set approved_borrowed = borrowings | selectattr('asset_id', 'equalto', asset.id) | selectattr('status', 'equalto', 'Approved') | map(attribute='quantity') | sum %}
-              {% set available = asset.quantity - approved_borrowed - (asset.damaged if asset.damaged is not none else 0) %}
+              {% set approved_borrowed = borrowings | selectattr('asset_id', 'equalto', asset.id)
+                                                   | selectattr('status', 'equalto', 'Approved')
+                                                   | map(attribute='quantity')
+                                                   | sum %}
+              {% set damaged = asset.damaged if asset.damaged is not none else 0 %}
+              {% set available = asset.quantity - approved_borrowed - damaged %}
               <tr>
                 <td>{{ asset.name }}</td>
                 <td>{{ asset.quantity }}</td>
-                <td>{{ available }}</td>
+                <td>{{ available if available > 0 else 0 }}</td>
                 <td>{{ approved_borrowed }}</td>
-                <td>{{ damaged }}</td>
-                {% set damaged = asset.damaged if asset.damaged is not none else 0 %}
+                <td class="{% if damaged > 0 %}text-danger fw-bold{% endif %}">
+                  {{ damaged }}
+                </td>
               </tr>
-              {% endfor %}
+            {% else %}
+              <tr>
+                <td colspan="5" class="text-center text-muted">No assets found.</td>
+              </tr>
+            {% endfor %}
+
             </tbody>
           </table>
         </div>
