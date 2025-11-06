@@ -1035,28 +1035,34 @@ def get_assets():
     asset_data = []
 
     for asset in all_assets:
-        quantity = asset.quantity or 0  # default to 0 if None
+        quantity = asset.quantity or 0
+        damaged = asset.damaged or 0
         approved_borrowed = 0
         approved_reserved = 0
 
+        # Borrowing assets
         if asset.classification == 'Borrowing':
             approved_borrowed = db.session.query(db.func.sum(Borrowing.quantity)).filter(
                 Borrowing.asset_id == asset.id,
                 Borrowing.status == 'Approved'
             ).scalar() or 0
 
+        # Reservation assets
         elif asset.classification == 'Reservation':
             approved_reserved = db.session.query(db.func.count(Reservation.id)).filter(
                 Reservation.asset_id == asset.id,
                 Reservation.status == 'Approved'
             ).scalar() or 0
 
-        available_quantity = quantity - approved_borrowed - approved_reserved
+        # ✅ Subtract damaged as well
+        available_quantity = quantity - approved_borrowed - approved_reserved - damaged
 
         asset_data.append({
             'id': asset.id,
             'name': asset.name,
             'available_quantity': max(available_quantity, 0),  # avoid negative
+            'total_quantity': quantity,
+            'damaged_quantity': damaged,
             'classification': asset.classification
         })
 
