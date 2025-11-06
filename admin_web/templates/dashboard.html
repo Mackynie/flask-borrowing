@@ -98,8 +98,9 @@
               <tr>
                 <th>Asset Name</th>
                 <th>Total Quantity</th>
-                <th>Available</th>
+                <th>Available Quantity</th>
                 <th>Active Borrowed</th>
+                <th>Damaged Assets</th>
               </tr>
             </thead>
             <tbody>
@@ -111,6 +112,7 @@
                 <td>{{ asset.quantity }}</td>
                 <td>{{ available }}</td>
                 <td>{{ approved_borrowed }}</td>
+                <td>{{ damaged }}</td>
               </tr>
               {% endfor %}
             </tbody>
