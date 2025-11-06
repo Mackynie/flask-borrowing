@@ -409,12 +409,40 @@ function buildOverdueTitle() {
 
 function buildOverdueFooter() {
   const today = new Date().toLocaleDateString();
+  const printedBy = "{{ admin_name }}";
+
   return `
-  <div style="font-size:12px; margin-top:24px; text-align:center;">
-    <div>Print date: ${today}</div>
-    <div style="margin-top:6px;">Printed by: {{ admin_name }}</div>
-  </div>`;
+    <div style="
+      font-size:12px;
+      margin-top:24px;
+      line-height:1.4;
+      width:100%;
+      position:relative;
+      display:flex;
+      flex-direction:column;
+    ">
+      <!-- ✅ Print Date (Left-aligned) -->
+      <div style="text-align:left;">
+        Print date: ${today}
+      </div>
+
+      <!-- ✅ Signature Space + Printed by -->
+      <div style="
+        margin-top:5px;   /* space before signature */
+        text-align:center;
+      ">
+        <div style="margin-bottom:5px;">&nbsp;</div> <!-- signature line space -->
+        <span style="
+          display:inline-block;
+          min-width:180px;
+        ">
+          Printed by: ${printedBy}
+        </span>
+      </div>
+    </div>
+  `;
 }
+
 
 async function printOverdueReport() {
   const table = document.getElementById('overdueTable');
