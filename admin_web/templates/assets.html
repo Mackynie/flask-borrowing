@@ -491,12 +491,18 @@ function buildExportFooter() {
   const today = new Date().toLocaleDateString();
   const printedBy = "{{ admin_name }}";
   return `
-    <div style="font-size:12px; margin-top:12px; display:flex; justify-content:space-between;">
+    <div style="
+      font-size:12px;
+      text-align:center;
+      margin-top:24px;   /* adds ~2 line spaces below table */
+      line-height:1.4;
+    ">
       <div>Print date: ${today}</div>
-      <div>Printed by: ${printedBy}</div>
+      <div style="margin-top:6px;">Printed by: ${printedBy}</div>
     </div>
   `;
 }
+
 
 
 // ✅ Print Report
