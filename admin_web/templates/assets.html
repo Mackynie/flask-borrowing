@@ -110,7 +110,7 @@
           <tbody>
             {% for asset in assets %}
               {% set active_borrowed = borrowings | selectattr('asset_id', 'equalto', asset.id) | selectattr('status', 'equalto', 'Approved') | map(attribute='quantity') | sum %}
-              {% set available_assets = asset.quantity - active_borrowed %}
+              {% set available_assets = asset.quantity - active_borrowed - (asset.damaged if asset.damaged is not none else 0) %}
               <tr class="export-visible">
                 <td>{{ asset.name }}</td>
                 <td>{{ asset.quantity }}</td>
