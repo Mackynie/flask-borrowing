@@ -490,18 +490,30 @@ async function buildExportHeader() {
 function buildExportFooter() {
   const today = new Date().toLocaleDateString();
   const printedBy = "{{ admin_name }}";
+
   return `
     <div style="
       font-size:12px;
-      text-align:center;
-      margin-top:24px;   /* adds ~2 line spaces below table */
+      margin-top:24px;
       line-height:1.4;
+      display:flex;
+      justify-content:space-between;
+      align-items:flex-start;
     ">
-      <div>Print date: ${today}</div>
-      <div style="margin-top:6px;">Printed by: ${printedBy}</div>
+      <!-- ✅ Print Date (left side, no extra space) -->
+      <div style="text-align:left;">
+        Print date: ${today}
+      </div>
+
+      <!-- ✅ Printed by with signature space above -->
+      <div style="text-align:right; flex:1; margin-left:50px;">
+        <div style="margin-bottom:40px;">&nbsp;</div> <!-- signature space -->
+        Printed by: ${printedBy}
+      </div>
     </div>
   `;
 }
+
 
 
 
