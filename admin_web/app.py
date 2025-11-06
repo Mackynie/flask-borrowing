@@ -1441,12 +1441,17 @@ def update_asset(id):
     if added_quantity > 0:
         asset.quantity += added_quantity
 
-    # ✅ 2. Deduct damaged items (Borrowing only)
+    # ✅ 2. Mark damaged items (Borrowing only)
     if classification == "Borrowing" and damaged_quantity > 0:
-        if damaged_quantity > asset.quantity:
-            flash('Damaged quantity cannot exceed total quantity.', 'danger')
+        # Ensure damaged does not exceed available
+        active_borrowed = Borrowing.query.filter_by(asset_id=asset.id, status='Approved').with_entities(db.func.sum(Borrowing.quantity)).scalar() or 0
+        available_assets = asset.quantity - old_damaged - active_borrowed
+
+        if damaged_quantity > available_assets:
+            flash('Damaged quantity cannot exceed available quantity.', 'danger')
             return redirect(url_for('assets_page'))
-        asset.quantity -= damaged_quantity
+
+        # ✅ Add to damaged count only (don’t reduce total)
         asset.damaged = old_damaged + damaged_quantity
 
     # ✅ 3. Update other fields
